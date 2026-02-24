@@ -190,12 +190,22 @@ const Content = (() => {
         }
     }
 
-    // 초기 콘텐츠 Firestore에 업로드 (관리자 전용)
+    // 초기 콘텐츠 Firestore에 업로드
+    // keyboard_ko / keyboard_en 은 커리큘럼이 바뀔 수 있으므로 항상 최신으로 덮어씀
+    // 그 외 콘텐츠는 Firestore에 없을 때만 초기화
+    const FORCE_OVERWRITE_KEYS = ['keyboard_ko', 'keyboard_en'];
+
     async function initializeDefaults() {
         for (const [key, val] of Object.entries(defaults)) {
-            const snap = await db.collection('content').doc(key).get();
-            if (!snap.exists) {
+            if (FORCE_OVERWRITE_KEYS.includes(key)) {
+                // 자리연습 콘텐츠: 항상 최신 커리큘럼으로 덮어쓰기
                 await save(key, val.items);
+            } else {
+                // 일반 콘텐츠: 없을 때만 초기화
+                const snap = await db.collection('content').doc(key).get();
+                if (!snap.exists) {
+                    await save(key, val.items);
+                }
             }
         }
     }

@@ -83,9 +83,19 @@ const BubbleGame = (() => {
 
         const sx = CANVAS_W / 2, sy = CANVAS_H - 28;
         const path = findShotPath(sx, sy, target);
-        if (!path) { combo = 0; notifyUpdate(); return false; } // 모든 경로 차단됨
 
-        proj = { x: sx, y: sy, vx: path.vx, vy: path.vy, color: target.color, word };
+        let vx, vy;
+        if (path) {
+            // 열린 경로 (직선 또는 반사)
+            vx = path.vx; vy = path.vy;
+        } else {
+            // 모든 경로 차단 → 직선으로 강제 발사 (중간 버블에 막혀 소멸됨)
+            const d = Math.hypot(target.x - sx, target.y - sy);
+            vx = (target.x - sx) / d * PROJ_SPEED;
+            vy = (target.y - sy) / d * PROJ_SPEED;
+        }
+
+        proj = { x: sx, y: sy, vx, vy, color: target.color, word };
         return true;
     }
 
@@ -182,8 +192,8 @@ const BubbleGame = (() => {
         return true;
     }
 
-    // 직선 또는 벽 반사 경로 탐색
-    // 반환: { vx, vy, bouncePoint } 또는 null(모든 경로 차단)
+    // 직선 또는 벽 반사 경로 탐색 (스마트 벽 선택 + 2구간 완전 도달 체크)
+    // 반환: { vx, vy, bouncePoint } 또는 null (모든 경로 불가)
     function findShotPath(sx, sy, target) {
         const excl = new Set([target]);
 
@@ -196,43 +206,35 @@ const BubbleGame = (() => {
             };
         }
 
-        // 2. 좌측 벽 반사 (x = BUBBLE_R)
+        // 벽 반사 시도 헬퍼 — 1구간 + 2구간 모두 통과해야 반환
+        function tryWall(wallX) {
+            const rtx = 2 * wallX - target.x;
+            const d = Math.hypot(rtx - sx, target.y - sy);
+            if (d === 0) return null;
+            const bpY = sy + (wallX - sx) / (rtx - sx) * (target.y - sy);
+            if (bpY <= 0 || bpY >= sy) return null;
+            // 1구간: 포신 → 반사점
+            if (!isSegmentClear(sx, sy, wallX, bpY, excl)) return null;
+            // 2구간: 반사점 → 타겟 (실제로 맞출 수 있는지 확인)
+            if (!isSegmentClear(wallX, bpY, target.x, target.y, excl)) return null;
+            return {
+                vx: (rtx - sx) / d * PROJ_SPEED,
+                vy: (target.y - sy) / d * PROJ_SPEED,
+                bouncePoint: { x: wallX, y: bpY }
+            };
+        }
+
         const wallL = BUBBLE_R;
-        const rtxL = 2 * wallL - target.x;          // 반사 목표 x
-        const dL = Math.hypot(rtxL - sx, target.y - sy);
-        if (dL > 0) {
-            const bpLy = sy + (wallL - sx) / (rtxL - sx) * (target.y - sy);
-            if (bpLy > 0 && bpLy < sy) {
-                if (isSegmentClear(sx, sy, wallL, bpLy, excl) &&
-                    isSegmentClear(wallL, bpLy, target.x, target.y, excl)) {
-                    return {
-                        vx: (rtxL - sx) / dL * PROJ_SPEED,
-                        vy: (target.y - sy) / dL * PROJ_SPEED,
-                        bouncePoint: { x: wallL, y: bpLy }
-                    };
-                }
-            }
-        }
-
-        // 3. 우측 벽 반사 (x = CANVAS_W - BUBBLE_R)
         const wallR = CANVAS_W - BUBBLE_R;
-        const rtxR = 2 * wallR - target.x;
-        const dR = Math.hypot(rtxR - sx, target.y - sy);
-        if (dR > 0) {
-            const bpRy = sy + (wallR - sx) / (rtxR - sx) * (target.y - sy);
-            if (bpRy > 0 && bpRy < sy) {
-                if (isSegmentClear(sx, sy, wallR, bpRy, excl) &&
-                    isSegmentClear(wallR, bpRy, target.x, target.y, excl)) {
-                    return {
-                        vx: (rtxR - sx) / dR * PROJ_SPEED,
-                        vy: (target.y - sy) / dR * PROJ_SPEED,
-                        bouncePoint: { x: wallR, y: bpRy }
-                    };
-                }
-            }
-        }
 
-        return null; // 모든 경로 차단
+        // 2. 타겟 위치에 따라 반대 벽 우선
+        //    왼쪽 타겟 → 우측 벽 반사 우선 (반대 방향에서 돌아오는 경로)
+        //    오른쪽 타겟 → 좌측 벽 반사 우선
+        if (target.x < sx) {
+            return tryWall(wallR) ?? tryWall(wallL) ?? null;
+        } else {
+            return tryWall(wallL) ?? tryWall(wallR) ?? null;
+        }
     }
 
     // ── 충돌 판정 ─────────────────────────────────────────────
@@ -256,7 +258,8 @@ const BubbleGame = (() => {
                 // ✅ 타겟 버블: 격파
                 popBubbles(closestBubble);
             } else {
-                // ❌ 중간 버블에 막힘: 발사체 소멸, 콤보 리셋
+                // ❌ 중간 버블에 막힘: 현재 위치에 부착
+                attachBubble();
                 combo = 0;
                 notifyUpdate();
             }
@@ -271,6 +274,27 @@ const BubbleGame = (() => {
             combo = 0;
             notifyUpdate();
         }
+    }
+
+    // ── 발사체 부착 (빗나갔을 때 클러스터에 붙음) ────────────────
+    function attachBubble() {
+        const ax = proj.x, ay = proj.y;
+        if (ay >= DANGER_Y) { checkDanger(); return; }
+        if (ay < 0) return;
+
+        // 기존 버블과 너무 가까우면 붙이지 않음
+        const tooClose = bubbles.some(b => b.alive && Math.hypot(b.x - ax, b.y - ay) < BUBBLE_R * 1.5);
+        if (!tooClose) {
+            const approxRow = Math.max(0, Math.round((ay - BUBBLE_R) / (BUBBLE_R * 1.72)));
+            bubbles.push({
+                row: approxRow, col: 0,
+                color: proj.color, word: proj.word,
+                x: ax, y: ay,
+                alive: true,
+            });
+            dropDetachedBubbles();
+        }
+        checkDanger();
     }
 
     // ── BFS 연쇄 제거 ─────────────────────────────────────────

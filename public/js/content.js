@@ -26,14 +26,58 @@ const Content = (() => {
     const defaults = {
         words_ko: {
             items: [
-                '사과', '바나나', '컴퓨터', '키보드', '마우스', '모니터', '프린터', '스캐너',
-                '노트북', '스마트폰', '태블릿', '인터넷', '소프트웨어', '하드웨어', '프로그램',
-                '데이터', '파일', '폴더', '바탕화면', '저장', '복사', '붙여넣기', '삭제', '실행',
-                '학교', '교실', '선생님', '학생', '공부', '숙제', '시험', '점수', '성적', '졸업',
-                '봄', '여름', '가을', '겨울', '눈', '비', '바람', '구름', '하늘', '태양', '달', '별',
+                // 동물
+                '사과', '바나나', '딸기', '포도', '수박', '복숭아', '오렌지', '레몬', '망고', '키위',
+                '토마토', '감자', '고구마', '양파', '마늘', '당근', '오이', '호박', '배추', '시금치',
                 '강아지', '고양이', '토끼', '사자', '호랑이', '코끼리', '기린', '원숭이', '펭귄', '독수리',
-                '밥', '국', '김치', '불고기', '비빔밥', '냉면', '삼겹살', '된장찌개', '순두부', '갈비',
-                '기차', '버스', '택시', '비행기', '자동차', '자전거', '오토바이', '배', '지하철', '트럭'
+                '곰', '늑대', '여우', '사슴', '말', '소', '돼지', '닭', '오리', '거위',
+                '고래', '상어', '돌고래', '문어', '오징어', '게', '새우', '조개', '물고기', '개구리',
+                '나비', '잠자리', '벌', '개미', '거미', '달팽이', '지렁이', '무당벌레', '메뚜기', '매미',
+                // 음식
+                '밥', '국', '김치', '불고기', '비빔밥', '냉면', '삼겹살', '된장찌개', '갈비', '순두부',
+                '라면', '떡볶이', '순대', '튀김', '김밥', '부침개', '잡채', '제육볶음', '삼계탕', '설렁탕',
+                '빵', '케이크', '과자', '아이스크림', '초콜릿', '사탕', '젤리', '도넛', '크래커', '쿠키',
+                '커피', '녹차', '홍차', '우유', '주스', '콜라', '사이다', '맥주', '물', '식혜',
+                // 학교
+                '학교', '교실', '선생님', '학생', '공부', '숙제', '시험', '점수', '성적', '졸업',
+                '교과서', '공책', '연필', '지우개', '자', '가위', '풀', '테이프', '칠판', '분필',
+                '도서관', '수업', '방과후', '급식', '체육', '음악', '미술', '과학', '수학', '국어',
+                '영어', '사회', '역사', '지리', '도덕', '기술', '가정', '보건', '진로', '동아리',
+                // 컴퓨터/IT
+                '컴퓨터', '키보드', '마우스', '모니터', '프린터', '스캐너', '노트북', '스마트폰', '태블릿', '인터넷',
+                '소프트웨어', '하드웨어', '프로그램', '데이터', '파일', '폴더', '바탕화면', '저장', '복사', '붙여넣기',
+                '삭제', '실행', '검색', '다운로드', '업로드', '메일', '채팅', '영상통화', '게임', '앱',
+                '유튜브', '블로그', '카카오', '네이버', '구글', '인스타', '틱톡', '페이스북', '트위터', '줌',
+                // 자연/날씨
+                '봄', '여름', '가을', '겨울', '눈', '비', '바람', '구름', '하늘', '태양',
+                '달', '별', '무지개', '번개', '천둥', '태풍', '안개', '서리', '이슬', '빙하',
+                '산', '강', '바다', '호수', '숲', '들판', '사막', '섬', '동굴', '폭포',
+                '나무', '꽃', '풀', '잎', '씨앗', '뿌리', '가지', '열매', '솔방울', '대나무',
+                // 교통
+                '기차', '버스', '택시', '비행기', '자동차', '자전거', '오토바이', '배', '지하철', '트럭',
+                '헬리콥터', '로켓', '우주선', '전철', '고속버스', '케이블카', '기선', '요트', '잠수함', '킥보드',
+                // 집/생활
+                '거실', '침실', '부엌', '화장실', '욕실', '현관', '베란다', '창문', '문', '계단',
+                '냉장고', '세탁기', '청소기', '에어컨', '선풍기', '텔레비전', '전자레인지', '오븐', '밥솥', '정수기',
+                '소파', '침대', '책상', '의자', '옷장', '서랍', '선반', '거울', '시계', '램프',
+                '가족', '아버지', '어머니', '형', '누나', '오빠', '언니', '동생', '할머니', '할아버지',
+                // 신체/건강
+                '머리', '얼굴', '눈', '코', '귀', '입', '이', '혀', '목', '어깨',
+                '팔', '손', '손가락', '배', '허리', '다리', '발', '발가락', '가슴', '등',
+                '병원', '의사', '간호사', '약', '주사', '혈액', '심장', '폐', '위', '간',
+                // 스포츠/취미
+                '축구', '야구', '농구', '배구', '수영', '달리기', '등산', '낚시', '태권도', '유도',
+                '피아노', '기타', '바이올린', '드럼', '플루트', '노래', '춤', '그림', '독서', '영화',
+                '게임', '보드게임', '퍼즐', '레고', '캠핑', '요리', '사진', '여행', '쇼핑', '산책',
+                // 직업
+                '의사', '간호사', '교사', '경찰', '소방관', '군인', '요리사', '미용사', '운전사', '농부',
+                '과학자', '예술가', '음악가', '배우', '운동선수', '기자', '변호사', '판사', '건축가', '프로그래머',
+                // 감정/형용사적 명사
+                '행복', '슬픔', '기쁨', '화남', '두려움', '놀람', '사랑', '우정', '친절', '용기',
+                '자유', '평화', '희망', '꿈', '목표', '노력', '성공', '실패', '도전', '성장',
+                // 장소
+                '도서관', '병원', '은행', '마트', '백화점', '공원', '놀이터', '영화관', '식당', '카페',
+                '박물관', '미술관', '수족관', '동물원', '놀이공원', '체육관', '수영장', '경기장', '공항', '항구'
             ]
         },
         sentences_ko: {
@@ -71,14 +115,45 @@ const Content = (() => {
         },
         words_en: {
             items: [
-                'apple', 'banana', 'computer', 'keyboard', 'mouse', 'monitor', 'printer', 'scanner',
-                'laptop', 'smartphone', 'tablet', 'internet', 'software', 'hardware', 'program',
-                'data', 'file', 'folder', 'desktop', 'save', 'copy', 'paste', 'delete', 'execute',
-                'school', 'classroom', 'teacher', 'student', 'study', 'homework', 'exam', 'score',
-                'spring', 'summer', 'autumn', 'winter', 'snow', 'rain', 'wind', 'cloud', 'sky', 'sun',
+                // Animals
                 'dog', 'cat', 'rabbit', 'lion', 'tiger', 'elephant', 'giraffe', 'monkey', 'penguin', 'eagle',
-                'rice', 'soup', 'bread', 'pizza', 'burger', 'noodle', 'salad', 'steak', 'sushi', 'taco',
-                'train', 'bus', 'taxi', 'airplane', 'car', 'bicycle', 'motorcycle', 'ship', 'subway', 'truck'
+                'bear', 'wolf', 'fox', 'deer', 'horse', 'cow', 'pig', 'chicken', 'duck', 'goose',
+                'whale', 'shark', 'dolphin', 'octopus', 'squid', 'crab', 'shrimp', 'clam', 'fish', 'frog',
+                'butterfly', 'dragonfly', 'bee', 'ant', 'spider', 'snail', 'worm', 'ladybug', 'grasshopper', 'cicada',
+                'parrot', 'owl', 'flamingo', 'peacock', 'crow', 'sparrow', 'pigeon', 'hawk', 'swan', 'heron',
+                // Food
+                'apple', 'banana', 'strawberry', 'grape', 'watermelon', 'peach', 'orange', 'lemon', 'mango', 'kiwi',
+                'tomato', 'potato', 'onion', 'garlic', 'carrot', 'cucumber', 'pumpkin', 'cabbage', 'spinach', 'broccoli',
+                'rice', 'bread', 'pizza', 'burger', 'noodle', 'salad', 'steak', 'sushi', 'taco', 'pasta',
+                'cake', 'cookie', 'donut', 'candy', 'chocolate', 'ice cream', 'pudding', 'waffle', 'pancake', 'muffin',
+                'coffee', 'tea', 'milk', 'juice', 'cola', 'water', 'soup', 'sandwich', 'omelet', 'bacon',
+                // School
+                'school', 'classroom', 'teacher', 'student', 'study', 'homework', 'exam', 'score', 'library', 'desk',
+                'pencil', 'eraser', 'ruler', 'scissors', 'glue', 'notebook', 'textbook', 'board', 'chalk', 'marker',
+                'math', 'science', 'history', 'english', 'music', 'art', 'sports', 'biology', 'chemistry', 'physics',
+                'grade', 'lesson', 'project', 'report', 'quiz', 'test', 'answer', 'question', 'lecture', 'club',
+                // Technology
+                'computer', 'keyboard', 'mouse', 'monitor', 'printer', 'scanner', 'laptop', 'smartphone', 'tablet', 'internet',
+                'software', 'hardware', 'program', 'data', 'file', 'folder', 'desktop', 'save', 'copy', 'paste',
+                'delete', 'search', 'download', 'upload', 'email', 'chat', 'video', 'game', 'app', 'website',
+                'robot', 'drone', 'satellite', 'server', 'network', 'password', 'username', 'browser', 'database', 'code',
+                // Nature
+                'spring', 'summer', 'autumn', 'winter', 'snow', 'rain', 'wind', 'cloud', 'sky', 'sun',
+                'moon', 'star', 'rainbow', 'thunder', 'storm', 'fog', 'river', 'ocean', 'mountain', 'forest',
+                'lake', 'desert', 'island', 'cave', 'waterfall', 'volcano', 'glacier', 'valley', 'cliff', 'meadow',
+                'tree', 'flower', 'grass', 'leaf', 'seed', 'root', 'branch', 'fruit', 'vine', 'bamboo',
+                // Transport
+                'train', 'bus', 'taxi', 'airplane', 'car', 'bicycle', 'motorcycle', 'ship', 'subway', 'truck',
+                'helicopter', 'rocket', 'spaceship', 'boat', 'ferry', 'ambulance', 'scooter', 'van', 'tram', 'cable car',
+                // Sports & Hobbies
+                'soccer', 'baseball', 'basketball', 'volleyball', 'swimming', 'running', 'hiking', 'fishing', 'tennis', 'golf',
+                'piano', 'guitar', 'violin', 'drum', 'singing', 'dancing', 'painting', 'reading', 'cooking', 'travel',
+                // Jobs
+                'doctor', 'nurse', 'teacher', 'police', 'firefighter', 'soldier', 'chef', 'farmer', 'pilot', 'engineer',
+                'scientist', 'artist', 'musician', 'actor', 'athlete', 'lawyer', 'judge', 'architect', 'programmer', 'designer',
+                // Emotions & Values
+                'happy', 'sad', 'angry', 'scared', 'surprised', 'love', 'friendship', 'kindness', 'courage', 'freedom',
+                'hope', 'dream', 'goal', 'effort', 'success', 'failure', 'challenge', 'growth', 'peace', 'trust'
             ]
         },
         sentences_en: {
@@ -190,18 +265,49 @@ const Content = (() => {
         }
     }
 
+    // ── Datamuse API로 영어 단어 수집 및 Firestore 저장 ──────────────
+    // 관리자 전용. 주제별로 단어를 가져와 기존 목록에 합산.
+    const DATAMUSE_TOPICS = [
+        'animals', 'food', 'school', 'sports', 'technology',
+        'nature', 'music', 'travel', 'health', 'science'
+    ];
+
+    async function fetchAndSaveEnglishWords() {
+        const wordSet = new Set(defaults.words_en.items); // 기본 단어 포함
+        const MAX_PER_TOPIC = 80;
+
+        for (const topic of DATAMUSE_TOPICS) {
+            try {
+                const res = await fetch(
+                    `https://api.datamuse.com/words?topics=${topic}&max=${MAX_PER_TOPIC}&md=f`
+                );
+                const data = await res.json();
+                data.forEach(({ word, tags }) => {
+                    // 명사/형용사/단일 단어만 포함, 공백 없는 단어, 3글자 이상
+                    const isNoun = !tags || tags.includes('n') || tags.includes('adj');
+                    if (isNoun && !word.includes(' ') && word.length >= 3 && word.length <= 12) {
+                        wordSet.add(word);
+                    }
+                });
+            } catch (e) {
+                console.warn(`Datamuse fetch failed for topic: ${topic}`, e);
+            }
+        }
+
+        const wordList = [...wordSet].sort();
+        await save('words_en', wordList);
+        return wordList.length;
+    }
+
     // 초기 콘텐츠 Firestore에 업로드
-    // keyboard_ko / keyboard_en 은 커리큘럼이 바뀔 수 있으므로 항상 최신으로 덮어씀
-    // 그 외 콘텐츠는 Firestore에 없을 때만 초기화
-    const FORCE_OVERWRITE_KEYS = ['keyboard_ko', 'keyboard_en'];
+    // keyboard_ko / keyboard_en / words_ko / words_en 은 항상 최신으로 덮어씀
+    const FORCE_OVERWRITE_KEYS = ['keyboard_ko', 'keyboard_en', 'words_ko', 'words_en'];
 
     async function initializeDefaults() {
         for (const [key, val] of Object.entries(defaults)) {
             if (FORCE_OVERWRITE_KEYS.includes(key)) {
-                // 자리연습 콘텐츠: 항상 최신 커리큘럼으로 덮어쓰기
                 await save(key, val.items);
             } else {
-                // 일반 콘텐츠: 없을 때만 초기화
                 const snap = await db.collection('content').doc(key).get();
                 if (!snap.exists) {
                     await save(key, val.items);
@@ -210,5 +316,5 @@ const Content = (() => {
         }
     }
 
-    return { load, save, getRandom, getContent, initializeDefaults, defaults };
+    return { load, save, getRandom, getContent, initializeDefaults, defaults, fetchAndSaveEnglishWords };
 })();

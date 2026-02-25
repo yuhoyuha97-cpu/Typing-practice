@@ -117,6 +117,17 @@
 
         <!-- ── 탭 3: 콘텐츠 관리 ── -->
         <div id="panel-content" class="hidden">
+            <!-- API 단어 수집 카드 -->
+            <div class="card"
+                style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div>
+                    <strong>🌐 영어 단어 자동 수집 (Datamuse API)</strong>
+                    <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px">동물·음식·학교·스포츠 등 10개 주제에서 단어를
+                        가져와 Firestore에 저장합니다.</div>
+                </div>
+                <button class="btn-primary" onclick="fetchEnglishWords()" id="btn-fetch-en">📥 영어 단어 수집</button>
+            </div>
+
             <div class="card">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
                     <h3 style="font-size:1.1rem;font-weight:900">📚 연습 콘텐츠 관리</h3>
@@ -361,6 +372,23 @@
             await Content.save(currentContentKey, currentContentItems);
             renderContentList();
             showMsg('content-save-msg');
+        }
+
+        // ── 영어 단어 API 수집 ────────────────
+        async function fetchEnglishWords() {
+            const btn = document.getElementById('btn-fetch-en');
+            btn.disabled = true;
+            btn.textContent = '⏳ 수집 중...';
+            try {
+                const count = await Content.fetchAndSaveEnglishWords();
+                showToast(`✅ 영어 단어 ${count}개 저장 완료!`, 'success');
+                if (currentContentKey === 'words_en') loadContent('words_en');
+            } catch (e) {
+                showToast('❌ 수집 실패: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📥 영어 단어 수집';
+            }
         }
 
         // ── 유틸 ─────────────────────────────

@@ -61,13 +61,25 @@ const TypingEngine = (() => {
             state.onUpdate({ wpm, accuracy, elapsed: Math.floor(elapsed) });
         }
 
-        // 완료 확인 (단어/문장: 텍스트 길이와 같아지면, 문단: 엔터 또는 완전 일치)
-        if (state.mode === 'word' || state.mode === 'sentence') {
-            if (value === state.text) complete(elapsed, value.length, errors);
-        } else {
-            // 문단 모드: 텍스트와 동일하게 입력
-            if (value === state.text) complete(elapsed, value.length, errors);
+        // 완료 확인 로직은 자동 검사에서 제외 (사용자가 엔터 쳐야 완료)
+    }
+
+    // 외부에서 완료 검사를 트리거할 수 있게 제공
+    function checkComplete(inputEl) {
+        const val = inputEl.value.replace(/\r?\n|\r/g, '').trimEnd();
+        const target = state.text.trimEnd();
+
+        if (val === target) {
+            const elapsed = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
+            // 오타 수는 현재 텍스트 길이를 바탕으로 재확인
+            let finalErrors = 0;
+            for (let i = 0; i < val.length; i++) {
+                if (val[i] !== state.text[i]) finalErrors++;
+            }
+            complete(elapsed, state.totalTyped, finalErrors);
+            return true;
         }
+        return false;
     }
 
     // 텍스트 디스플레이 렌더링 (정타: 초록, 오타: 빨강, 미입력: 기본)
@@ -147,5 +159,5 @@ const TypingEngine = (() => {
         return `${m}:${s}`;
     }
 
-    return { init, processInput, renderText, calcWPM, calcCPM, calcAccuracy, getState, formatTime };
+    return { init, processInput, renderText, calcWPM, calcCPM, calcAccuracy, getState, formatTime, checkComplete };
 })();

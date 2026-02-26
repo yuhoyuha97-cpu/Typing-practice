@@ -368,8 +368,20 @@
             document.getElementById('kb-vis-label').textContent = showKeyboard ? 'ON' : 'OFF';
         }
 
+        let accumulatedKeystrokes = 0;
+        let accumulatedErrors = 0;
+        let accumulatedDuration = 0;
+        let sessionStartTime = 0;
+
         // ── 세션 시작 ──────────────────────────────────────────
-        async function startSession() {
+        async function startSession(isContinuing = false) {
+            if (!isContinuing) {
+                accumulatedKeystrokes = 0;
+                accumulatedErrors = 0;
+                accumulatedDuration = 0;
+                sessionStartTime = Date.now();
+            }
+
             const modeKey = currentMode === 'keyboard' ? 'keyboard'
                 : currentMode === 'word' ? 'words'
                     : currentMode === 'sentence' ? 'sentences'
@@ -386,9 +398,12 @@
 
             comboCount = 0;
             document.getElementById('stat-combo').textContent = '0';
-            document.getElementById('stat-wpm').textContent = '0';
-            document.getElementById('stat-acc').textContent = '100%';
-            document.getElementById('stat-time').textContent = '00:00';
+
+            if (!isContinuing) {
+                document.getElementById('stat-wpm').textContent = '0';
+                document.getElementById('stat-acc').textContent = '100%';
+                document.getElementById('stat-time').textContent = '00:00';
+            }
 
             const displayEl = document.getElementById('typing-display');
             const inputEl = document.getElementById('typing-input');
@@ -403,11 +418,32 @@
                 mode: currentMode,
                 lang: currentLang,
                 onUpdate: ({ wpm, accuracy, elapsed }) => {
-                    document.getElementById('stat-wpm').textContent = wpm;
-                    document.getElementById('stat-acc').textContent = accuracy + '%';
-                    document.getElementById('stat-time').textContent = TypingEngine.formatTime(elapsed);
+                    // 전체 누적 수치로 화면 업데이트
+                    const totalSec = accumulatedDuration + elapsed;
+                    const totalChars = (accumulatedKeystrokes + (inputEl.value.length || 0)) - (accumulatedErrors + (TypingEngine.state?.errors || 0));
+
+                    document.getElementById('stat-wpm').textContent = totalSec > 0 ? Game.calcWPM(Math.max(0, totalChars), totalSec, currentLang) : 0;
+                    document.getElementById('stat-acc').textContent = (accumulatedKeystrokes + (inputEl.value.length || 0)) > 0
+                        ? Game.calcAccuracy((accumulatedKeystrokes + (inputEl.value.length || 0)), (accumulatedErrors + (TypingEngine.state?.errors || 0))) + '%'
+                        : '100%';
+                    document.getElementById('stat-time').textContent = TypingEngine.formatTime(totalSec);
                 },
-                onComplete: (result) => { clearInterval(timerInterval); saveAndShowResult(result); }
+                onComplete: async (result) => {
+                    clearInterval(timerInterval);
+
+                    accumulatedKeystrokes += result.keystrokes;
+                    accumulatedErrors += result.errors;
+                    accumulatedDuration += result.duration;
+
+                    // 문단 연습이 아닌 경우(자리, 단어, 문장) 결과창으로 가지 않고 무한 반복 진행
+                    if (currentMode !== 'paragraph') {
+                        // 중간 백그라운드 저장 무시 (최종 나가기에서 일괄 저장)
+                        startSession(true); // 계속 진행
+                    } else {
+                        // 문단 모드는 기존대로 즉시 저장하고 결과창으로 이동
+                        saveAndShowResult(result);
+                    }
+                }
             });
 
             TypingEngine.renderText(displayEl, '');
@@ -513,12 +549,42 @@
             inputEl.focus();
         }
 
-        function skipSession() { startSession(); }
+        function skipSession() { startSession(true); }
+
         function showSetup() {
             clearInterval(timerInterval);
-            document.getElementById('section-typing').classList.add('hidden');
-            document.getElementById('section-result').classList.add('hidden');
-            document.getElementById('section-setup').classList.remove('hidden');
+
+            // 만약 현재 무한 반복 모드(자리, 단어, 문장) 라면 여태까지 누적된 수치로 결과를 먼저 보여줌
+            if (currentMode !== 'paragraph' && accumulatedKeystrokes > 0) {
+                // 현재 입력 중이던(타이핑 엔진에 남은) 데이터 합산
+                const currentElapsed = TypingEngine.state?.startTime ? (Date.now() - TypingEngine.state.startTime) / 1000 : 0;
+                const currentTyped = document.getElementById('typing-input').value.length || 0;
+                const currentErrors = TypingEngine.state?.errors || 0;
+
+                const finalKeystrokes = accumulatedKeystrokes + currentTyped;
+                const finalErrors = accumulatedErrors + currentErrors;
+                const finalDuration = Math.floor(accumulatedDuration + currentElapsed);
+                const correctChars = finalKeystrokes - finalErrors;
+
+                const sessionResult = {
+                    mode: currentMode,
+                    lang: currentLang,
+                    wpm: Game.calcWPM(Math.max(0, correctChars), finalDuration, currentLang),
+                    cpm: finalDuration > 0 ? Math.round((correctChars / finalDuration) * 60) : 0,
+                    accuracy: Game.calcAccuracy(finalKeystrokes, finalErrors),
+                    duration: finalDuration,
+                    keystrokes: finalKeystrokes,
+                    errors: finalErrors,
+                };
+
+                // 누적된 결과창으로 보내기
+                saveAndShowResult(sessionResult);
+            } else {
+                // 기존 단순 복귀 (입력이 아예 없었거나 문단 모드 중간 나갈시)
+                document.getElementById('section-typing').classList.add('hidden');
+                document.getElementById('section-result').classList.add('hidden');
+                document.getElementById('section-setup').classList.remove('hidden');
+            }
         }
 
         // ── 결과 저장 및 표시 ──────────────────────────────────

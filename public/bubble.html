@@ -274,8 +274,8 @@
                 document.getElementById('bubble-canvas'),
                 items,
                 {
-                    onUpdate: ({ score, level, combo }) => {
-                        updateHUD({ score, level, combo });
+                    onUpdate: ({ score, level, combo, wpm }) => {
+                        updateHUD({ score, level, combo, wpm });
                         refreshWordList();
                     },
                     onGameOver: ({ score, level }) => {

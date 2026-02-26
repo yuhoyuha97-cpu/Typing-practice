@@ -92,7 +92,11 @@
 
                     <!-- HUD -->
                     <div class="bubble-hud-card">
-                        <h3>🎯 현황</h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                            <h3 style="margin-bottom:0">🎯 현황</h3>
+                            <button class="btn-danger" style="padding:4px 12px;font-size:0.8rem" onclick="goIntro()"
+                                title="게임 중단">⏹️ 중단</button>
+                        </div>
                         <div class="bubble-stat">
                             <span class="label">점수</span>
                             <span class="value" id="hud-score">0</span>
@@ -160,28 +164,31 @@
         const GAME_GAP = 20;        // flex gap
 
         function resizeBubbleCanvas() {
-            const wrap = document.getElementById('bubble-canvas-wrap');
-            if (!wrap) return;
+            const canvas = document.getElementById('bubble-canvas');
+            if (!canvas) return;
 
             const container = document.querySelector('.container');
             const containerW = container ? container.clientWidth : window.innerWidth - 48;
             const navH = document.querySelector('.nav')?.offsetHeight || 60;
-            const availH = window.innerHeight - navH - 80; // 상하 여백
+            const availH = window.innerHeight - navH - 80;
             const availW = containerW - SIDE_PANEL_W - GAME_GAP;
 
-            // 너비·높이 기준 scale 중 작은 값 사용, 최소 0.5 최대 2.5
+            // 너비·높이 기준 scale 중 작은 값, 카다 최소 0.5 최대 2.5
             const scaleByW = availW / CANVAS_BASE_W;
             const scaleByH = availH / CANVAS_BASE_H;
-            const scale = Math.min(scaleByW, scaleByH, 2.5);
-            const finalScale = Math.max(scale, 0.5);
+            const finalScale = Math.min(Math.max(Math.min(scaleByW, scaleByH), 0.5), 2.5);
 
-            wrap.style.transform = `scale(${finalScale})`;
-            // transform-origin: top left 기준 — 래퍼의 레이아웃 공간도 맞춤
-            wrap.style.width = CANVAS_BASE_W + 'px';
-            wrap.style.height = CANVAS_BASE_H + 'px';
-            // 부모 flex 공간을 scale된 시각적 크기에 맞게 확보
-            wrap.style.marginRight = (CANVAS_BASE_W * (finalScale - 1)) + 'px';
-            wrap.style.marginBottom = (CANVAS_BASE_H * (finalScale - 1)) + 'px';
+            // devicePixelRatio 반영하여 캔버스 버퍼를 고해상도로 설정 → 선명한 렌더링
+            const dpr = window.devicePixelRatio || 1;
+            const totalScale = finalScale * dpr;
+
+            // canvas.style 크기 = 시각적 CSS 크기
+            canvas.style.width = (CANVAS_BASE_W * finalScale) + 'px';
+            canvas.style.height = (CANVAS_BASE_H * finalScale) + 'px';
+            // 게임 엔진에 scale 적용 (ctx.scale 자업시발)
+            if (typeof BubbleGame !== 'undefined') {
+                BubbleGame.setRenderScale(totalScale);
+            }
         }
 
         window.addEventListener('resize', () => {
@@ -195,7 +202,7 @@
 
         // ── 인증 ──────────────────────────────────────────────
         Auth.initAuthListener({
-            requireAuth: true,
+            requireAuth: false,
             onLogin: async (user) => {
                 currentUser = user;
                 const profile = await Profile.getProfile(user.uid);
@@ -203,7 +210,14 @@
                 userProfile = profile;
                 document.getElementById('nav-name').textContent = profile.name;
                 document.getElementById('nav-avatar').src = user.photoURL || '';
+                document.getElementById('nav-avatar').style.display = 'block';
                 await Content.initializeDefaults();
+            },
+            onLogout: () => {
+                currentUser = null;
+                userProfile = null;
+                document.getElementById('nav-name').textContent = '게스트 플레이어';
+                document.getElementById('nav-avatar').style.display = 'none';
             }
         });
 
@@ -224,6 +238,17 @@
             document.getElementById('bubble-intro').classList.add('hidden');
             document.getElementById('bubble-game-area').classList.remove('hidden');
             document.getElementById('overlay-gameover').classList.add('hidden');
+
+            // 설정에서 스페셜 버블 확률 가져오기
+            try {
+                const snap = await db.collection('settings').doc('ranking').get();
+                if (snap.exists) {
+                    const prob = snap.data().specialBubbleProb;
+                    if (prob !== undefined) {
+                        BubbleGame.setSpecialProb(prob);
+                    }
+                }
+            } catch (e) { console.error('설정 로드 오류:', e); }
 
             // 점수 초기화
             updateHUD({ score: 0, level: 1, combo: 0 });

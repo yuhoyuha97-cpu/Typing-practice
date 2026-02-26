@@ -108,6 +108,21 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+                <div class="toggle-wrap"
+                    style="align-items:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+                    <div style="flex:1">
+                        <div class="toggle-label">스페셜 버블 등장 확률</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted)">1% ~ 100% 사이로 입력하세요. 기본값은 7%입니다.</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <input type="number" id="setting-special-prob" class="input-field"
+                            style="width:80px;text-align:right" min="1" max="100" value="7">
+                        <span style="font-size:0.9rem;color:var(--text-secondary)">%</span>
+                    </div>
+                </div>
+                <div style="margin-top:24px;text-align:right">
+                    <button class="btn-primary" onclick="saveRankingSettings()">설정 저장</button>
+                </div>
                 <div id="ranking-save-msg" class="hidden"
                     style="margin-top:16px;padding:10px;background:rgba(0,255,136,0.1);border:1px solid var(--accent-green);border-radius:var(--radius-sm);color:var(--accent-green);font-size:0.85rem;text-align:center">
                     ✅ 설정이 저장되었습니다.
@@ -317,11 +332,17 @@
             const settings = await Records.getRankingSettings();
             document.getElementById('toggle-class').checked = settings.classRankingEnabled !== false;
             document.getElementById('toggle-grade').checked = settings.gradeRankingEnabled !== false;
+
+            // 확률이 0.07 형태로 저장되므로 100을 곱해 %로 보여줌
+            const prob = settings.specialBubbleProb !== undefined ? settings.specialBubbleProb : 0.07;
+            document.getElementById('setting-special-prob').value = Math.round(prob * 100);
         }
         async function saveRankingSettings() {
+            const probValue = parseInt(document.getElementById('setting-special-prob').value) || 7;
             const settings = {
                 classRankingEnabled: document.getElementById('toggle-class').checked,
                 gradeRankingEnabled: document.getElementById('toggle-grade').checked,
+                specialBubbleProb: Math.max(1, Math.min(100, probValue)) / 100 // 1~100 사이로 제한 후 비율 0.xx로 변환
             };
             await Records.setRankingSettings(settings);
             const msg = document.getElementById('ranking-save-msg');

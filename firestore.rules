@@ -4,7 +4,7 @@ service cloud.firestore {
 
     // 관리자 여부 확인 함수
     function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // 로그인 여부 확인 함수
@@ -14,7 +14,7 @@ service cloud.firestore {
 
     // 본인 여부 확인 함수
     function isOwner(uid) {
-      return request.auth.uid == uid;
+      return request.auth != null && request.auth.uid == uid;
     }
 
     // ── users 컬렉션 ──────────────────────────────────
@@ -44,25 +44,25 @@ service cloud.firestore {
 
     // ── settings 컬렉션 (랭킹 ON/OFF 등) ──────────────
     match /settings/{doc} {
-      allow read: if isLoggedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // ── content 컬렉션 (연습 콘텐츠) ──────────────────
     match /content/{doc} {
-      allow read: if isLoggedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // ── ranking 컬렉션 (캐시된 랭킹 결과) ─────────────
     match /ranking/{doc} {
-      allow read: if isLoggedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // ── bubbleRanking 컬렉션 (미니게임 랭킹) ──────────────
     match /bubbleRanking/{uid} {
-      allow read: if isLoggedIn();
+      allow read: if true;
       allow write: if isOwner(uid);
     }
   }

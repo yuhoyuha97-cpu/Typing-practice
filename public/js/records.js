@@ -120,14 +120,14 @@ const Records = (() => {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
-    // 랭킹 설정 읽기
+    // 랭킹/게임 설정 읽기
     async function getRankingSettings() {
         const snap = await db.collection('settings').doc('ranking').get();
-        if (!snap.exists) return { classRankingEnabled: true, gradeRankingEnabled: true };
+        if (!snap.exists) return { classRankingEnabled: true, gradeRankingEnabled: true, specialBubbleProb: 0.07 };
         return snap.data();
     }
 
-    // 랭킹 설정 저장 (관리자 전용)
+    // 랭킹/게임 설정 저장 (관리자 전용)
     async function setRankingSettings(settings) {
         await db.collection('settings').doc('ranking').set(settings, { merge: true });
     }

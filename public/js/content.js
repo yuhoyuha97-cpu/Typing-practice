@@ -305,13 +305,17 @@ const Content = (() => {
 
     async function initializeDefaults() {
         for (const [key, val] of Object.entries(defaults)) {
-            if (FORCE_OVERWRITE_KEYS.includes(key)) {
-                await save(key, val.items);
-            } else {
-                const snap = await db.collection('content').doc(key).get();
-                if (!snap.exists) {
+            try {
+                if (FORCE_OVERWRITE_KEYS.includes(key)) {
                     await save(key, val.items);
+                } else {
+                    const snap = await db.collection('content').doc(key).get();
+                    if (!snap.exists) {
+                        await save(key, val.items);
+                    }
                 }
+            } catch (e) {
+                // 권한 부족 등 에러 무시 (일반 유저)
             }
         }
     }

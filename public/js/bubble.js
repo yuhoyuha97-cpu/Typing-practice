@@ -15,6 +15,7 @@ const BubbleGame = (() => {
     const DROP_START = 11000;           // 초기 내려오기 주기(ms)
     const DROP_MIN = 3500;            // 최소 주기
     const DROP_STEP = 600;             // 레벨당 주기 감소
+    let specialProb = 0.07;            // 스페셜 버블 생성 확률 (설정 가능)
 
     const COLORS = [
         '#FF4455', // 빨강
@@ -45,6 +46,86 @@ const BubbleGame = (() => {
     let aimTarget = null;      // 현재 조준 중인 타겟 버블
     let aimPath = null;       // 조준 경로 { vx, vy, bouncePoint }
     let totalDrops = 0;        // 전체 내려온 횟수 (하단 행 추가 홀짝 보정용)
+    let renderScale = 1;       // CSS scale 대신 ctx.scale로 해상도 유지
+
+    // ── 오디오 ────────────────────────────────────────────────
+    let _audioCtx = null;
+    function getAudioCtx() {
+        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (_audioCtx.state === 'suspended') _audioCtx.resume();
+        return _audioCtx;
+    }
+
+    // 버블 팝 사운드 (combo에 따라 음높이 상승)
+    function playPopSound(count = 1) {
+        try {
+            const ctx = getAudioCtx();
+            const now = ctx.currentTime;
+
+            // 짧은 노이즈 burst (공기 빠지는 느낌)
+            const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+            const noiseSource = ctx.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.18, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+            noiseSource.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noiseSource.start(now); noiseSource.stop(now + 0.06);
+
+            // 하강하는 사인파 (버블 팝 피치)
+            const baseFreq = 480 + (count - 1) * 60;
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, now + 0.1);
+            gainNode.gain.setValueAtTime(0.22, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.start(now); osc.stop(now + 0.12);
+        } catch (e) { /* 오디오 미지원 시 무시 */ }
+    }
+
+    // 스페셜 버블 터짐 효과음 (3연속 상승음)
+    function playSpecialSound() {
+        try {
+            const ctx2 = getAudioCtx();
+            const now = ctx2.currentTime;
+            [0, 0.07, 0.14].forEach((delay, i) => {
+                const o = ctx2.createOscillator();
+                const g = ctx2.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(700 + i * 200, now + delay);
+                o.frequency.exponentialRampToValueAtTime(1400 + i * 200, now + delay + 0.15);
+                g.gain.setValueAtTime(0.25, now + delay);
+                g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+                o.connect(g); g.connect(ctx2.destination);
+                o.start(now + delay); o.stop(now + delay + 0.15);
+            });
+        } catch (e) { }
+    }
+
+    // ── 스페셜: 랜덤 방향 라인 버블 선택 ────────────────────────
+    // dir: 0=가로(행), 1=좌대각선, 2=우대각선
+    function getLineBubbles(target, dir) {
+        return bubbles.filter(b => {
+            if (!b.alive) return false;
+            const rowDiff = b.row - target.row;
+            if (dir === 0) {
+                return b.row === target.row;
+            } else if (dir === 1) {
+                const expectedX = target.x - rowDiff * BUBBLE_R;
+                return Math.abs(b.x - expectedX) < BUBBLE_R * 1.3;
+            } else {
+                const expectedX = target.x + rowDiff * BUBBLE_R;
+                return Math.abs(b.x - expectedX) < BUBBLE_R * 1.3;
+            }
+        });
+    }
 
     // ── 육각형 격자 좌표 ──────────────────────────────────────
     const hexX = (col, row) =>
@@ -140,7 +221,8 @@ const BubbleGame = (() => {
         const cols = COLS - (visualParity === 1 ? 1 : 0);
         for (let c = 0; c < cols; c++) {
             if (Math.random() > FILL_PROB) continue;
-            const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            const isSpecial = Math.random() < specialProb;
+            const color = isSpecial ? '#FFFFFF' : COLORS[Math.floor(Math.random() * COLORS.length)];
             const word = nextWord();
             // X는 스폰 시 고정 — 이후 row가 바뀌어도 재계산하지 않음
             const x = BUBBLE_R + c * BUBBLE_R * 2 + (visualParity === 1 ? BUBBLE_R : 0);
@@ -150,6 +232,7 @@ const BubbleGame = (() => {
                 x,
                 y: hexY(atRow),
                 alive: true,
+                isSpecial,
             });
         }
     }
@@ -164,6 +247,8 @@ const BubbleGame = (() => {
             // 새 행 추가 전에 totalDrops 증가 (패리티 보정)
             totalDrops++;
             spawnRow(0);
+            // 새 row=0 스폰 후, 연결 끊긴 고립 버블 즉시 낙하 처리
+            dropDetachedBubbles();
             checkDanger();
         }, dropInterval);
     }
@@ -304,6 +389,13 @@ const BubbleGame = (() => {
         const queue = [target];
         visited.add(target);
 
+        // 스페셜 버블: 랜덤 방향 한 줄 전제
+        if (target.isSpecial) {
+            const dir = Math.floor(Math.random() * 3);
+            getLineBubbles(target, dir).forEach(b => visited.add(b));
+            playSpecialSound();
+        }
+
         // 1단계: 같은 색 연결 BFS
         while (queue.length) {
             const cur = queue.shift();
@@ -318,6 +410,9 @@ const BubbleGame = (() => {
 
         const count = visited.size;
         visited.forEach(b => { b.alive = false; });
+
+        // 팔 사운드 (combo 수치로 음높이 조절)
+        playPopSound(Math.min(combo + 1, 6));
 
         // 2단계: 천장 연결 체크 → 분리된 버블 낙하
         dropDetachedBubbles();
@@ -427,7 +522,9 @@ const BubbleGame = (() => {
     }));
 
     function render() {
-        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(renderScale, renderScale);
 
         // 배경
         const bg = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -459,12 +556,12 @@ const BubbleGame = (() => {
         // 버블 렌더 (살아있는 것)
         bubbles.forEach(b => {
             if (!b.alive) return;
-            drawBubble(b.x, b.y, b.color, b.word, 1.0);
+            drawBubble(b.x, b.y, b.color, b.word, 1.0, b.isSpecial);
         });
 
         // 낙하 중인 버블
         fallingBubbles.forEach(f => {
-            drawBubble(f.x, f.y, f.color, f.word, f.alpha);
+            drawBubble(f.x, f.y, f.color, f.word, f.alpha, f.isSpecial);
         });
 
         // 발사체
@@ -472,21 +569,34 @@ const BubbleGame = (() => {
 
         // 대포
         drawCannon();
+
+        ctx.restore();
     }
 
-    function drawBubble(x, y, color, word, alpha = 1.0) {
+    function drawBubble(x, y, color, word, alpha = 1.0, isSpecial = false) {
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        // 글로우
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 16;
+        // 스페셜: 무지개는 글로우+테두리에만, 본체는 항상 은백색으로 고정
+        const rainbowColor = `hsl(${(Date.now() / 8) % 360}, 100%, 65%)`;
 
-        // 본체
+        // 글로우
+        ctx.shadowColor = isSpecial ? rainbowColor : color;
+        ctx.shadowBlur = isSpecial ? (18 + Math.sin(Date.now() / 200) * 8) : 16;
+
+        // 본체 (스페셜 = 은백색 그라데이션, 일반 = 해당 컴러)
         ctx.beginPath();
         ctx.arc(x, y, BUBBLE_R - 1, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.88 * alpha;
+        if (isSpecial) {
+            const bodyGrad = ctx.createRadialGradient(x - 6, y - 6, 2, x, y, BUBBLE_R);
+            bodyGrad.addColorStop(0, '#ffffff');
+            bodyGrad.addColorStop(0.5, '#d8eeff');
+            bodyGrad.addColorStop(1, '#a8c8ff');
+            ctx.fillStyle = bodyGrad;
+        } else {
+            ctx.fillStyle = color;
+        }
+        ctx.globalAlpha = 0.92 * alpha;
         ctx.fill();
 
         // 하이라이트
@@ -501,26 +611,40 @@ const BubbleGame = (() => {
         ctx.fill();
 
         // 테두리
-        ctx.globalAlpha = 0.4 * alpha;
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-        ctx.lineWidth = 1;
+        ctx.globalAlpha = isSpecial ? 0.95 * alpha : 0.4 * alpha;
+        ctx.strokeStyle = isSpecial ? rainbowColor : 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = isSpecial ? 3 : 1;
         ctx.beginPath();
         ctx.arc(x, y, BUBBLE_R - 1, 0, Math.PI * 2);
         ctx.stroke();
+
+        // 스페셜: 회전하는 외부 후광 효과
+        if (isSpecial) {
+            ctx.globalAlpha = 0.65 * alpha;
+            ctx.strokeStyle = `hsl(${((Date.now() / 8) + 180) % 360}, 100%, 80%)`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.lineDashOffset = -(Date.now() / 25) % 9;
+            ctx.beginPath();
+            ctx.arc(x, y, BUBBLE_R + 4, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
 
         ctx.restore();
 
         // 단어 텍스트
         ctx.save();
         ctx.globalAlpha = alpha;
-        const fs = word.length > 5 ? 9 : word.length > 3 ? 11 : 13;
+        const displayWord = isSpecial ? '★' + (word.length > 4 ? word.slice(0, 3) + '…' : word) : word;
+        const fs = displayWord.length > 5 ? 9 : displayWord.length > 3 ? 11 : 13;
         ctx.font = `bold ${fs}px 'Pretendard', 'Apple SD Gothic Neo', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.shadowBlur = 5;
-        const display = word.length > 6 ? word.slice(0, 5) + '…' : word;
+        ctx.fillStyle = isSpecial ? '#fff' : '#ffffff';
+        ctx.shadowColor = isSpecial ? rainbowColor : 'rgba(0,0,0,0.9)';
+        ctx.shadowBlur = isSpecial ? 8 : 5;
+        const display = displayWord.length > 7 ? displayWord.slice(0, 6) + '…' : displayWord;
         ctx.fillText(display, x, y);
         ctx.restore();
     }
@@ -662,5 +786,18 @@ const BubbleGame = (() => {
         return arr;
     }
 
-    return { init, shoot, aim, pause, resume, stop, getLiveWords };
+    // ── 렌더스케일 설정 (외부에서 호출) ──────────────────────────
+    function setRenderScale(s) {
+        renderScale = s;
+        if (canvas) {
+            canvas.width = Math.round(CANVAS_W * s);
+            canvas.height = Math.round(CANVAS_H * s);
+        }
+    }
+
+    function setSpecialProb(prob) {
+        specialProb = prob;
+    }
+
+    return { init, shoot, aim, pause, resume, stop, getLiveWords, setRenderScale, setSpecialProb };
 })();

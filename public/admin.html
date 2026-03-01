@@ -352,16 +352,21 @@
             document.getElementById('setting-special-prob').value = Math.round(prob * 100);
         }
         async function saveRankingSettings() {
-            const probValue = parseInt(document.getElementById('setting-special-prob').value) || 7;
-            const settings = {
-                classRankingEnabled: document.getElementById('toggle-class').checked,
-                gradeRankingEnabled: document.getElementById('toggle-grade').checked,
-                specialBubbleProb: Math.max(1, Math.min(100, probValue)) / 100 // 1~100 사이로 제한 후 비율 0.xx로 변환
-            };
-            await Records.setRankingSettings(settings);
-            const msg = document.getElementById('ranking-save-msg');
-            msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 2500);
+            try {
+                const probValue = parseInt(document.getElementById('setting-special-prob').value) || 7;
+                const settings = {
+                    classRankingEnabled: document.getElementById('toggle-class').checked,
+                    gradeRankingEnabled: document.getElementById('toggle-grade').checked,
+                    specialBubbleProb: Math.max(1, Math.min(100, probValue)) / 100
+                };
+                await Records.setRankingSettings(settings);
+                const msg = document.getElementById('ranking-save-msg');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 2500);
+            } catch (error) {
+                console.error('설정 저장 실패:', error);
+                showToast('❌ 설정 저장 실패: ' + error.message, 'error');
+            }
         }
 
         // ── 콘텐츠 관리 ─────────────────────
@@ -394,11 +399,16 @@
             const input = document.getElementById('content-new-input');
             const val = input.value.trim();
             if (!val) return;
-            currentContentItems.push(val);
-            await Content.save(currentContentKey, currentContentItems);
-            input.value = '';
-            renderContentList();
-            showMsg('content-save-msg');
+            try {
+                currentContentItems.push(val);
+                await Content.save(currentContentKey, currentContentItems);
+                input.value = '';
+                renderContentList();
+                showMsg('content-save-msg');
+            } catch (error) {
+                console.error('콘텐츠 추가 실패:', error);
+                showToast('❌ 콘텐츠 추가 실패: ' + error.message, 'error');
+            }
         }
 
         async function deleteContentItem(index) {

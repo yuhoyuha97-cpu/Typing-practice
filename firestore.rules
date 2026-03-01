@@ -4,7 +4,10 @@ service cloud.firestore {
 
     // 관리자 여부 확인 함수
     function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth != null && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'kdevelop1592@gmail.com'
+      );
     }
 
     // 로그인 여부 확인 함수

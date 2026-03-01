@@ -1,0 +1,231 @@
+/* ── 화면 키보드 스타일 ── */
+.keyboard-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    /* 영역 밖으로 핸드 오버레이가 나가지 않도록 차단 */
+}
+
+.kb-row {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.kb-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom: 3px solid rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    transition: all 0.1s ease;
+    cursor: default;
+}
+
+.key-wide {
+    min-width: 56px;
+}
+
+.key-wider {
+    min-width: 76px;
+}
+
+.key-space {
+    min-width: 240px;
+}
+
+.key-correct {
+    background: rgba(0, 255, 136, 0.25) !important;
+    border-color: var(--accent-green) !important;
+    color: var(--accent-green) !important;
+    transform: translateY(2px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+.key-error {
+    background: rgba(255, 68, 68, 0.25) !important;
+    border-color: var(--accent-red) !important;
+    color: var(--accent-red) !important;
+    transform: translateY(2px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
+}
+
+.key-hint {
+    background: rgba(0, 212, 255, 0.2) !important;
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+    animation: hintPulse 1s ease infinite;
+}
+
+@keyframes hintPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.9);
+    }
+}
+
+/* ── 고급스러운 CSS 다각형 투명 손 오버레이 ── */
+.hand-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -24px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 152px;
+    padding-right: 22px;
+    pointer-events: none !important;
+    /* 클릭 방해 금지 */
+    z-index: 10;
+}
+
+.hand-overlay * {
+    pointer-events: none !important;
+    /* 자식 요소들도 클릭 이벤트 무시 */
+}
+
+.hand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.palm {
+    position: absolute;
+    bottom: -10px;
+    width: 170px;
+    height: 100px;
+    background: rgba(120, 120, 150, 0.5);
+    border: 2px solid rgba(150, 150, 180, 0.5);
+    border-bottom: none;
+    border-radius: 40px 40px 10px 10px;
+    backdrop-filter: blur(2px);
+    z-index: 2;
+}
+
+.fingers {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    position: relative;
+    z-index: 1;
+    padding-bottom: 75px;
+}
+
+.finger {
+    width: 34px;
+    background: rgba(120, 120, 150, 0.45);
+    border: 2px solid rgba(150, 150, 180, 0.5);
+    border-radius: 16px 16px 0 0;
+    transition: all 0.1s ease;
+    transform-origin: bottom center;
+}
+
+.f-lp,
+.f-rp {
+    height: 65px;
+}
+
+.f-lr,
+.f-rr {
+    height: 100px;
+}
+
+.f-lm,
+.f-rm {
+    height: 115px;
+}
+
+.f-li,
+.f-ri {
+    height: 95px;
+}
+
+.f-lt {
+    position: absolute;
+    bottom: -35px;
+    right: -25px;
+    height: 60px;
+    transform: rotate(70deg);
+    transform-origin: bottom center;
+    z-index: 3;
+}
+
+.f-rt {
+    position: absolute;
+    bottom: -35px;
+    left: -25px;
+    height: 60px;
+    transform: rotate(-70deg);
+    transform-origin: bottom center;
+    z-index: 3;
+}
+
+.f-lt.active {
+    transform: rotate(70deg) translateY(6px) scale(0.98);
+}
+
+.f-rt.active {
+    transform: rotate(-70deg) translateY(6px) scale(0.98);
+}
+
+.finger.error {
+    background: rgba(255, 68, 68, 0.7);
+    border-color: #ffffff;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.9);
+    transform: translateY(6px) scale(0.98);
+}
+
+.f-lt.error {
+    transform: rotate(70deg) translateY(6px) scale(0.98);
+}
+
+.f-rt.error {
+    transform: rotate(-70deg) translateY(6px) scale(0.98);
+}
+
+.finger.hint {
+    background: rgba(0, 255, 136, 0.45);
+    border-color: #ffffff;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+    animation: modernFingerPulse 1.2s ease infinite;
+}
+
+@keyframes modernFingerPulse {
+
+    0%,
+    100% {
+        background: rgba(0, 255, 136, 0.45);
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+    }
+
+    50% {
+        background: rgba(0, 255, 136, 0.75);
+        box-shadow: 0 0 25px rgba(0, 255, 136, 1);
+    }
+}

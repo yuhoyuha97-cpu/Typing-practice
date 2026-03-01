@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>경덕중학교 타자마스터 — 관리자</title>
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/main.css?v=1.2.1">
+    <link rel="stylesheet" href="css/typing.css?v=1.2.1">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -21,7 +22,7 @@
                     style="width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:8px">
                 경덕중학교 타자마스터 — 관리자
                 <span id="ui-version"
-                    style="font-size:0.65rem;color:var(--text-muted);margin-left:8px;font-family:monospace;opacity:0.6">v1.2.0</span>
+                    style="font-size:0.65rem;color:var(--text-muted);margin-left:8px;font-family:monospace;opacity:0.6">v1.2.1</span>
             </a>
             <div class="nav-user">
                 <a href="/app.html" class="btn-secondary" style="padding:8px 16px;font-size:0.85rem">← 연습 화면</a>
@@ -35,7 +36,8 @@
         <!-- 탭 네비 -->
         <div class="tabs" style="margin-bottom:28px">
             <button class="tab-btn active" id="tab-students" onclick="switchTab('students')">👥 학생 목록</button>
-            <button class="tab-btn" id="tab-ranking" onclick="switchTab('ranking')">🏆 랭킹 설정</button>
+            <button class="tab-btn" id="tab-ranking" onclick="switchTab('ranking')">🏆 랭킹/게임 설정</button>
+            <button class="tab-btn" id="tab-keyboard" onclick="switchTab('keyboard')">⌨️ 키보드 설정</button>
             <button class="tab-btn" id="tab-content" onclick="switchTab('content')">📚 콘텐츠 관리</button>
         </div>
 
@@ -145,6 +147,34 @@
                 <button class="btn-primary" onclick="fetchEnglishWords()" id="btn-fetch-en">📥 영어 단어 수집</button>
             </div>
 
+            <!-- 키보드 설정 패널 -->
+            <div id="panel-keyboard" class="hidden">
+                <div class="card" style="margin-bottom:20px">
+                    <h3 style="font-size:1.1rem;font-weight:900;margin-bottom:12px">⌨️ 타자연습 손가락 위치 조정</h3>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:20px">
+                        연습 화면의 손가락 위치를 마우스 드래그로 미세하게 조정할 수 있습니다.<br>
+                        (조정한 후 아래 <strong>[변경사항 저장]</strong> 버튼을 꼭 눌러주세요.)
+                    </p>
+
+                    <div id="admin-kb-container"
+                        style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px solid var(--border); overflow:hidden; position:relative;">
+                        <!-- KeyboardDisplay.render()가 여기에 렌더링됨 -->
+                        <div id="admin-kb-display"></div>
+                    </div>
+
+                    <div style="display:flex;gap:12px;margin-top:24px">
+                        <button class="btn-primary" onclick="saveKeyboardSettings()"
+                            style="flex:2;justify-content:center">✅ 변경사항 저장</button>
+                        <button class="btn-secondary" onclick="resetKeyboardSettings()"
+                            style="flex:1;justify-content:center">🔃 기본값으로 초기화</button>
+                    </div>
+                    <div id="kb-save-msg" class="hidden"
+                        style="margin-top:12px;padding:10px;background:rgba(0,136,255,0.1);border:1px solid var(--accent-cyan);border-radius:var(--radius-sm);color:var(--accent-cyan);font-size:0.85rem;text-align:center">
+                        💾 키보드 위치 설정이 저장되었습니다.
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
                     <h3 style="font-size:1.1rem;font-weight:900">📚 연습 콘텐츠 관리</h3>
@@ -206,11 +236,12 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js?v=1.2.0"></script>
-    <script src="js/auth.js?v=1.2.0"></script>
-    <script src="js/profile.js?v=1.2.0"></script>
-    <script src="js/content.js?v=1.2.0"></script>
-    <script src="js/records.js?v=1.2.0"></script>
+    <script src="js/firebase-config.js?v=1.2.1"></script>
+    <script src="js/auth.js?v=1.2.1"></script>
+    <script src="js/profile.js?v=1.2.1"></script>
+    <script src="js/content.js?v=1.2.1"></script>
+    <script src="js/records.js?v=1.2.1"></script>
+    <script src="js/keyboard.js?v=1.2.1"></script>
     <script>
         let allStudents = [];
         let currentContentKey = 'words_ko';
@@ -224,6 +255,7 @@
                 console.log('관리자 로그인 확인됨:', user.email, '(v1.2.0)');
                 await loadStudents();
                 await loadRankingSettings();
+                await loadKeyboardSettings();
                 await loadContent('keyboard_basic_ko');
                 checkAdminStatus();
             }
@@ -231,10 +263,16 @@
 
         // ── 탭 전환 ──────────────────────────
         function switchTab(name) {
-            ['students', 'ranking', 'content'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
-                document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== name);
+            ['students', 'ranking', 'keyboard', 'content'].forEach(t => {
+                const tabBtn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+                if (tabBtn) tabBtn.classList.toggle('active', t === name);
+                if (panel) panel.classList.toggle('hidden', t !== name);
             });
+            if (name === 'keyboard') {
+                // 키보드 탭 선택 시 다시 렌더링하여 드래그 이벤트 연결
+                renderAdminKeyboard();
+            }
         }
 
         // ── 학생 목록 ─────────────────────────
@@ -442,6 +480,81 @@
                 btn.disabled = false;
                 btn.textContent = '📥 영어 단어 수집';
             }
+        }
+
+        // ── 키보드 설정 (드래그) ────────────────
+        let fingerPositions = {}; // { fingerId: { x, y } }
+
+        async function loadKeyboardSettings() {
+            const settings = await Records.getKeyboardSettings();
+            fingerPositions = settings || {};
+            renderAdminKeyboard();
+        }
+
+        function renderAdminKeyboard() {
+            const containerEl = document.getElementById('admin-kb-display');
+            if (!containerEl) return;
+
+            // 관리자용은 항상 한글로 표시 (기준점 확인용)
+            KeyboardDisplay.render(containerEl, 'ko', { customPositions: fingerPositions });
+
+            // 드래그 이벤트 연결
+            const fingers = containerEl.querySelectorAll('.finger');
+            fingers.forEach(fel => {
+                fel.style.cursor = 'move';
+                fel.style.pointerEvents = 'auto'; // 관리자에서는 클릭 가능하게
+
+                fel.onmousedown = (e) => {
+                    e.preventDefault();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const id = fel.id;
+                    const initialPos = fingerPositions[id] || { x: 0, y: 0 };
+
+                    const onMouseMove = (me) => {
+                        const dx = me.clientX - startX;
+                        const dy = me.clientY - startY;
+
+                        const newX = initialPos.x + dx;
+                        const newY = initialPos.y + dy;
+
+                        fingerPositions[id] = { x: newX, y: newY };
+
+                        // 즉시 시각적 반영 (translate)
+                        let baseTransform = `translate(calc(-50% + ${newX}px), ${-newY}px)`;
+                        if (id === 'f-lt') baseTransform += ' rotate(-25deg)';
+                        if (id === 'f-rt') baseTransform += ' rotate(25deg)';
+                        fel.style.transform = baseTransform;
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                };
+            });
+        }
+
+        async function saveKeyboardSettings() {
+            try {
+                await Records.setKeyboardSettings(fingerPositions);
+                showMsg('kb-save-msg');
+                showToast('✅ 손가락 위치가 저장되었습니다.', 'success');
+            } catch (e) {
+                console.error('저장 실패:', e);
+                showToast('❌ 저장 실패: ' + e.message, 'error');
+            }
+        }
+
+        async function resetKeyboardSettings() {
+            if (!confirm('손가락 위치를 모두 기본값으로 되돌릴까요?')) return;
+            fingerPositions = {};
+            await Records.setKeyboardSettings({});
+            renderAdminKeyboard();
+            showToast('🔃 기본값으로 초기화되었습니다.');
         }
 
         // ── 유틸 ─────────────────────────────

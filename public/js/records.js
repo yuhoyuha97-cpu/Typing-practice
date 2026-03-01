@@ -146,10 +146,28 @@ const Records = (() => {
         console.log('설정 저장 완료');
     }
 
+    // 키보드 손가락 위치 설정 읽기
+    async function getKeyboardSettings() {
+        try {
+            const snap = await db.collection('settings').doc('keyboard').get();
+            return snap.exists ? snap.data() : null;
+        } catch (e) {
+            console.error('키보드 설정 로드 실패:', e);
+            return null;
+        }
+    }
+
+    // 키보드 손가락 위치 설정 저장 (관리자 전용)
+    async function setKeyboardSettings(settings) {
+        console.log('키보드 설정 저장 시도:', settings);
+        await db.collection('settings').doc('keyboard').set(settings);
+    }
+
     return {
         save, getMyRecords,
         getClassRanking, getGradeRanking,
         getAllUsers, getUserRecords,
-        getRankingSettings, setRankingSettings
+        getRankingSettings, setRankingSettings,
+        getKeyboardSettings, setKeyboardSettings
     };
 })();

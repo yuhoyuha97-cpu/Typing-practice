@@ -79,7 +79,13 @@ const KeyboardDisplay = (() => {
 
     // ── 렌더링 ────────────────────────────────────────────
 
-    function render(el, lang = 'en') {
+    // ── 렌더링 ────────────────────────────────────────────
+    /**
+     * @param {HTMLElement} el - 컨테이너
+     * @param {string} lang - 언어 ('ko' 또는 'en')
+     * @param {Object} options - { customPositions: { fingerId: {x,y} } }
+     */
+    function render(el, lang = 'en', options = {}) {
         container = el;
         currentLang = lang;
         const rows = lang === 'ko' ? KO_ROWS : EN_ROWS;
@@ -121,6 +127,26 @@ const KeyboardDisplay = (() => {
             </div>
         `;
         el.appendChild(hands);
+
+        // 커스텀 위치 적용 (절대 좌표 모드)
+        if (options.customPositions) {
+            hands.style.position = 'static'; // 부모 grid/flex 영향 제거
+            const fingers = el.querySelectorAll('.finger');
+            fingers.forEach(fel => {
+                const pos = options.customPositions[fel.id];
+                if (pos) {
+                    fel.style.position = 'absolute';
+                    fel.style.left = '50%';
+                    fel.style.bottom = '8px';
+                    // 기준점에서 이동 (기존 CSS margin/gap 무시를 위해 transform 사용 권장이나 x,y가 픽셀이면 margin-left/bottom도 가능)
+                    // 여기서는 유연성을 위해 transform: translate() 사용
+                    fel.style.transform = `translate(calc(-50% + ${pos.x}px), ${-pos.y}px)`;
+                    // 기본 transform이 있는 엄지손가락 등 예외 처리는 pressKey 등에서 고려됨
+                    if (fel.id === 'f-lt') fel.style.transform += ' rotate(-25deg)';
+                    if (fel.id === 'f-rt') fel.style.transform += ' rotate(25deg)';
+                }
+            });
+        }
     }
 
     // ── 키 피드백 ─────────────────────────────────────────

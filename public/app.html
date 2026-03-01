@@ -525,6 +525,11 @@
             const items = await Content.getContent(contentKey);
             if (!items.length) { alert('콘텐츠가 없습니다.'); return; }
 
+            // 키보드 커스텀 위치 로드
+            const kbSettings = await Records.getKeyboardSettings();
+            KeyboardDisplay.render(document.getElementById('kb-display'), currentLang, {
+                customPositions: kbSettings
+            });
             if (currentMode === 'word') {
                 sessionText = Content.getRandom(items, 5).join(' ');
             } else {

@@ -98,13 +98,13 @@
     align-items: flex-end;
     gap: 152px;
     padding-right: 22px;
-    pointer-events: none !important;
-    /* 클릭 방해 금지 */
+    pointer-events: none;
+    /* 클릭 방합 금지 */
     z-index: 10;
 }
 
 .hand-overlay * {
-    pointer-events: none !important;
+    pointer-events: none;
     /* 자식 요소들도 클릭 이벤트 무시 */
 }
 

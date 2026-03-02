@@ -139,7 +139,13 @@
 
         let secondaryPw = null;
         if (userDoc.exists) {
-          secondaryPw = userDoc.data().secondaryPassword;
+          const ud = userDoc.data();
+          if (ud.banned === true) {
+            alert('🚫 시스템에 의해 접근이 영구 차단된 계정입니다.\n문의사항이 있다면 관리자(선생님)에게 연락해 주세요.');
+            await cancelLogin();
+            return;
+          }
+          secondaryPw = ud.secondaryPassword;
         }
 
         document.getElementById('card-google-login').classList.add('hidden');

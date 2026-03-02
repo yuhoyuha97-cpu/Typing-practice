@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>경덕중학교 타자마스터 — 연습</title>
     <meta name="description" content="한글/영문 타자 연습 — 자리연습, 단어, 문장, 문단 모드">
-    <link rel="stylesheet" href="css/main.css?v=1.3.7">
-    <link rel="stylesheet" href="css/typing.css?v=1.3.7">
-    <link rel="stylesheet" href="css/keyboard.css?v=1.3.7">
+    <link rel="stylesheet" href="css/main.css?v=1.4.2">
+    <link rel="stylesheet" href="css/typing.css?v=1.4.2">
+    <link rel="stylesheet" href="css/keyboard.css?v=1.4.2">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -214,14 +214,14 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js?v=1.3.7"></script>
-    <script src="js/auth.js?v=1.3.7"></script>
-    <script src="js/profile.js?v=1.3.7"></script>
-    <script src="js/content.js?v=1.3.7"></script>
-    <script src="js/records.js?v=1.3.7"></script>
-    <script src="js/game.js?v=1.3.7"></script>
-    <script src="js/typing-engine.js?v=1.3.7"></script>
-    <script src="js/keyboard.js?v=1.3.7"></script>
+    <script src="js/firebase-config.js?v=1.4.2"></script>
+    <script src="js/auth.js?v=1.4.2"></script>
+    <script src="js/profile.js?v=1.4.2"></script>
+    <script src="js/content.js?v=1.4.2"></script>
+    <script src="js/records.js?v=1.4.2"></script>
+    <script src="js/game.js?v=1.4.2"></script>
+    <script src="js/typing-engine.js?v=1.4.2"></script>
+    <script src="js/keyboard.js?v=1.4.2"></script>
     <script>
         let currentUser = null;
         let userProfile = null;
@@ -298,6 +298,37 @@
         let accumulatedDuration = 0;
         let sessionStartTime = 0;
 
+        // ── 한글 타이핑 시퀀스 분해기 ────────────────────────
+        function getTypingSequence(str) {
+            const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            const JUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+            const JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            const COMP = {
+                'ㅘ': ['ㅗ', 'ㅏ'], 'ㅙ': ['ㅗ', 'ㅐ'], 'ㅚ': ['ㅗ', 'ㅣ'], 'ㅝ': ['ㅜ', 'ㅓ'],
+                'ㅞ': ['ㅜ', 'ㅔ'], 'ㅟ': ['ㅜ', 'ㅣ'], 'ㅢ': ['ㅡ', 'ㅣ'],
+                'ㄳ': ['ㄱ', 'ㅅ'], 'ㄵ': ['ㄴ', 'ㅈ'], 'ㄶ': ['ㄴ', 'ㅎ'], 'ㄺ': ['ㄹ', 'ㄱ'],
+                'ㄻ': ['ㄹ', 'ㅁ'], 'ㄼ': ['ㄹ', 'ㅂ'], 'ㄽ': ['ㄹ', 'ㅅ'], 'ㄾ': ['ㄹ', 'ㅌ'],
+                'ㄿ': ['ㄹ', 'ㅍ'], 'ㅀ': ['ㄹ', 'ㅎ'], 'ㅄ': ['ㅂ', 'ㅅ']
+            };
+
+            let seq = [];
+            for (let i = 0; i < str.length; i++) {
+                let char = str[i];
+                let code = char.charCodeAt(0);
+                if (code >= 0xAC00 && code <= 0xD7A3) { // 완성형 한글
+                    const offset = code - 0xAC00;
+                    seq.push(CHO[Math.floor(offset / 28 / 21)]);
+                    let jung = JUNG[Math.floor(offset / 28) % 21];
+                    COMP[jung] ? seq.push(...COMP[jung]) : seq.push(jung);
+                    let jong = JONG[offset % 28];
+                    if (jong) { COMP[jong] ? seq.push(...COMP[jong]) : seq.push(jong); }
+                } else {
+                    COMP[char] ? seq.push(...COMP[char]) : seq.push(char);
+                }
+            }
+            return seq;
+        }
+
         // ── 세션 시작 ──────────────────────────────────────────
         async function startSession(isContinuing = false) {
             if (!isContinuing) {
@@ -307,11 +338,18 @@
                 sessionStartTime = Date.now();
             }
 
+            // 기초 모드의 경우 언어가 명확히 정해져 있으므로 자동 전환
+            if (currentMode === 'keyboard_basic') setLang('ko');
+            else if (currentMode === 'keyboard_basic_en') setLang('en');
+
             const modeKey = currentMode === 'keyboard_basic' ? 'keyboard_basic'
-                : currentMode === 'keyboard_word' ? 'keyboard_word'
-                    : currentMode === 'word' ? 'words'
-                        : currentMode === 'sentence' ? 'sentences'
-                            : 'paragraphs';
+                : currentMode === 'keyboard_basic_en' ? 'keyboard_basic' // content.js 에서는 뒤에 _en 이 붙음
+                    : currentMode === 'keyboard_word' ? 'keyboard_word'
+                        : currentMode === 'word' ? 'words'
+                            : currentMode === 'sentence' ? 'sentences'
+                                : 'paragraphs';
+
+            // keyboard_basic_en 의 경우 modeKey: 'keyboard_basic', currentLang: 'en' 이 되어 'keyboard_basic_en' 조합이 됨.
             const contentKey = `${modeKey}_${currentLang}`;
             const items = await Content.getContent(contentKey);
             if (!items.length) { alert('콘텐츠가 없습니다.'); return; }
@@ -381,8 +419,13 @@
 
             TypingEngine.renderText(displayEl, '');
             // KeyboardDisplay.render는 위에서 한 번만 호출되도록 함 (중복 제거)
-            // 화면 키보드 리셋 + 첫 글자 힌트
-            KeyboardDisplay.highlightNext(sessionText[0]);
+            // 화면 키보드 리셋 + 첫 글자 힌트 (자소 분해 적용)
+            const initialSeq = getTypingSequence(sessionText);
+            if (initialSeq.length > 0) {
+                KeyboardDisplay.highlightNext(initialSeq[0]);
+            } else {
+                KeyboardDisplay.highlightNext(sessionText[0]);
+            }
 
             // ── 자리연습 기초 모드용 커스텀 입력 버퍼 ──
             // IME와 싸우지 않도록 물리적 키 입력만 추적하여 화면에 그림
@@ -414,28 +457,44 @@
                     const isCorrect = newChar === expected;
                     isCorrect ? comboCount++ : (comboCount = 0);
                     document.getElementById('stat-combo').textContent = comboCount;
-
-                    // 다음 키 힌트
-                    const nextChar = sessionText[val.length];
-                    if (nextChar) KeyboardDisplay.highlightNext(nextChar);
-                    else KeyboardDisplay.highlightNext('Enter');
-
-                } else if (val.length === lastLen && val.length > 0) {
-                    // ★ 한글 IME 조합 중 — 글자 수는 같지만 마지막 글자가 바뀐 경우
-                    // (ㅍ → 파 처럼 모음이 붙을 때)
-                    // 정타/오타는 이미 keydown에서 표시되므로 힌트만 갱신
-                    const nextChar = sessionText[val.length];
-                    if (nextChar) KeyboardDisplay.highlightNext(nextChar);
-                    else KeyboardDisplay.highlightNext('Enter');
-
                 } else if (val.length < lastLen) {
                     // 백스페이스
                     comboCount = 0;
                     document.getElementById('stat-combo').textContent = '0';
-                    const nextChar = sessionText[val.length];
-                    if (nextChar) KeyboardDisplay.highlightNext(nextChar);
-                    else KeyboardDisplay.highlightNext('Enter');
                 }
+
+                // 오타가 나더라도 현재 치고 있는/쳐야 할 글자의 다음 자소를 안내
+                let nextExpectedChar = null;
+
+                if (val.length === 0) {
+                    const seq = getTypingSequence(sessionText[0]);
+                    nextExpectedChar = seq[0];
+                } else if (val.length > sessionText.length) {
+                    nextExpectedChar = 'Enter';
+                } else {
+                    const currentIndex = val.length - 1;
+                    const targetChar = sessionText[currentIndex];
+                    const typedChar = val[currentIndex];
+
+                    const targetSeq = getTypingSequence(targetChar);
+                    const typedSeq = getTypingSequence(typedChar);
+
+                    if (typedSeq.length < targetSeq.length) {
+                        nextExpectedChar = targetSeq[typedSeq.length];
+                    } else {
+                        if (currentIndex + 1 < sessionText.length) {
+                            const nextTargetChar = sessionText[currentIndex + 1];
+                            const nextTargetSeq = getTypingSequence(nextTargetChar);
+                            nextExpectedChar = nextTargetSeq[0];
+                        } else {
+                            nextExpectedChar = 'Enter';
+                        }
+                    }
+                }
+
+                if (nextExpectedChar) KeyboardDisplay.highlightNext(nextExpectedChar);
+                else KeyboardDisplay.highlightNext('Enter');
+
                 lastLen = val.length;
             };
 

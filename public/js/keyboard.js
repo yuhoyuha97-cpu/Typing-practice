@@ -220,9 +220,9 @@ const KeyboardDisplay = (() => {
         // 기존 힌트 제거
         container.querySelectorAll('.key-hint').forEach(e => e.classList.remove('key-hint'));
         container.querySelectorAll('.finger.hint').forEach(e => e.classList.remove('hint'));
+
         if (!char) return;
 
-        let found = false;
         const markHint = (key) => {
             let escapedKey = key;
             if (key === '\\') escapedKey = '\\\\';
@@ -231,9 +231,8 @@ const KeyboardDisplay = (() => {
 
             try {
                 const el = container.querySelector(`[data-key="${escapedKey}"]`);
-                if (el && !found) {
+                if (el) {
                     el.classList.add('key-hint');
-                    found = true;
                     const fingerId = FINGER_MAP[key];
                     if (fingerId) {
                         const fel = container.querySelector('#' + fingerId);
@@ -243,31 +242,48 @@ const KeyboardDisplay = (() => {
             } catch (e) { }
         };
 
-        const rows = currentLang === 'ko' ? KO_ROWS : EN_ROWS;
-        rows.forEach(row => {
-            row.forEach(key => {
-                if (currentLang === 'ko') {
-                    // 한글 문자를 KO_MAP 역방향으로 찾기
-                    const match = Object.entries(KO_MAP).find(([k, v]) => v === char);
-                    if (match && key === match[1]) markHint(key);
+        if (char === 'Enter') { markHint('Enter'); return; }
+
+        if (currentLang === 'ko') {
+            const match = Object.entries(KO_MAP).find(([k, v]) => v === char);
+            if (match) {
+                const engKey = match[0];
+                const baseHangul = KO_MAP[engKey.toLowerCase()];
+                markHint(baseHangul);
+                // 쉬프트 조합 (ㅃㅉㄸㄲㅆㅒㅖ)
+                if (engKey >= 'A' && engKey <= 'Z') {
+                    const fid = FINGER_MAP[baseHangul];
+                    if (fid && fid.startsWith('f-l')) markHint('Shift↑'); // 왼손 타자는 우측 쉬프트
+                    else markHint('Shift');
                 }
-                // 영문 직접 매핑
-                if (key.toLowerCase() === char.toLowerCase()) markHint(key);
-                // Space
-                if (char === ' ' && key === 'Space') {
-                    const el = container.querySelector(`[data-key="Space"]`);
-                    if (el && !found) {
-                        el.classList.add('key-hint');
-                        found = true;
-                        const fingerId = FINGER_MAP['Space'];
-                        if (fingerId) {
-                            const fel = container.querySelector('#' + fingerId);
-                            if (fel) fel.classList.add('hint');
-                        }
-                    }
+            } else {
+                if (char === ' ') markHint('Space');
+                else markHint(char);
+            }
+        } else {
+            if (char === ' ') markHint('Space');
+            else if (char >= 'A' && char <= 'Z') {
+                markHint(char.toLowerCase());
+                const fid = FINGER_MAP[char.toLowerCase()];
+                if (fid && fid.startsWith('f-l')) markHint('Shift↑');
+                else markHint('Shift');
+            } else {
+                // 특수문자 쉬프트 처리
+                const specialShiftMap = {
+                    '~': '`', '!': '1', '@': '2', '#': '3', '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0', '_': '-', '+': '=',
+                    '{': '[', '}': ']', '|': '\\', ':': ';', '"': "'", '<': ',', '>': '.', '?': '/'
+                };
+                if (specialShiftMap[char]) {
+                    const baseSpecial = specialShiftMap[char];
+                    markHint(baseSpecial);
+                    const fid = FINGER_MAP[baseSpecial];
+                    if (fid && fid.startsWith('f-l')) markHint('Shift↑');
+                    else markHint('Shift');
+                } else {
+                    markHint(char.toLowerCase());
                 }
-            });
-        });
+            }
+        }
     }
 
     // 언어 전환 시 키보드 재렌더

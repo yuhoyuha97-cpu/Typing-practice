@@ -1099,6 +1099,7 @@
             try {
                 await Records.setSiteSettings({ title, subtitle, grades, classesPerGrade });
                 document.getElementById('page-title').textContent = title + ' — 관리자';
+                document.getElementById('site-nav-title').firstChild.textContent = ' ' + title + ' — 관리자 ';
                 showMsg('site-save-msg');
                 showToast(`✅ 사이트 설정 저장 (${grades}학년 × ${classesPerGrade}반)`, 'success');
             } catch (e) {
@@ -1156,6 +1157,8 @@
             refreshDangerCount();
             showToast(`✅ ${deleted}명 삭제 완료${failed > 0 ? ` (실패 ${failed}명)` : ''}`, 'success');
         }
+
+
 
         // ── 유틸 ─────────────────────────────
 

@@ -106,9 +106,10 @@ const Records = (() => {
     async function getAllUsers() {
         const snap = await db.collection('users')
             .where('profileComplete', '==', true)
-            .orderBy('className')
             .get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // 클라이언트에서 정렬 (Firestore 인덱스 오류 방지)
+        return users.sort((a, b) => (a.className || '').localeCompare(b.className || ''));
     }
 
     // 관리자: 특정 학생 기록 조회

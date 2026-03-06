@@ -150,6 +150,9 @@ const BubbleGame = (() => {
         dropInterval = DROP_START;
         totalDrops = 0;
         gameRunning = true;
+        // 상세 통계 초기화
+        startTime = 0; totalCharsTyped = 0; lastWordTime = 0; lastWordWpm = 0; maxWpm = 0;
+        totalShots = 0; totalHits = 0;
 
         // 위에서 추가된 "연결성 검증 방지(럭키샷 방지)" 코드는 
         // 아랫줄(row + 1)을 기준으로 윗줄을 붙이도록 설계되어 있음.
@@ -172,6 +175,8 @@ const BubbleGame = (() => {
     let lastWordTime = 0;
     let lastWordWpm = 0;
     let maxWpm = 0;
+    let totalShots = 0;   // 전체 발사 횟수
+    let totalHits = 0;    // 성공 타격 횟수
 
     // ── 타겟 선택 헬퍼 (스마트 조준) ─────────────────────────
     function findBestTarget(word, prefixMatch = false) {
@@ -206,6 +211,7 @@ const BubbleGame = (() => {
         // 성공 타이핑 시 통계 계산
         const wordLen = word.length;
         totalCharsTyped += wordLen;
+        totalShots++;  // 발사 횟수 비용 (성공 타이핑 기준 계산의 효율성 없어 해당 시 1 증가)
 
         if (lastWordTime === 0) lastWordTime = startTime;
         const timeDiffSec = (now - lastWordTime) / 1000;
@@ -587,6 +593,7 @@ const BubbleGame = (() => {
 
         // 점수: 단독=10, 연쇄 보너스
         combo++;
+        totalHits++;  // 성공 타요 증가
         const pts = count === 1 ? 10 * combo : count * 15 * combo;
         score += pts;
         popped++;
@@ -655,7 +662,22 @@ const BubbleGame = (() => {
         gameRunning = false;
         clearInterval(dropTimer);
         cancelAnimationFrame(animFrame);
-        if (cb.onGameOver) cb.onGameOver({ score, level, win });
+
+        const endTime = Date.now();
+        const durationSec = startTime > 0 ? Math.round((endTime - startTime) / 1000) : 0;
+        const totalStrokes = (typeof gameLang !== 'undefined' && gameLang === 'en')
+            ? totalCharsTyped : totalCharsTyped * 2.5;
+        const avgWpmFinal = (durationSec > 0) ? Math.round((totalStrokes / durationSec) * 60) : 0;
+        const accuracy = totalShots > 0 ? Math.round((totalHits / totalShots) * 100) : 100;
+
+        if (cb.onGameOver) cb.onGameOver({
+            score, level, win,
+            wpm: { avg: avgWpmFinal, max: maxWpm },
+            accuracy,
+            duration: durationSec,
+            totalShots,
+            totalHits,
+        });
     }
 
     // ── 메인 루프 ─────────────────────────────────────────────

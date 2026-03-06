@@ -163,10 +163,19 @@ const Records = (() => {
         await db.collection('settings').doc('keyboard').set(settings);
     }
 
+    // 관리자: 특정 학생 버블슈터 기록 조회
+    async function getBubbleRecords(uid) {
+        const snap = await db.collection('users').doc(uid)
+            .collection('bubbleRecords')
+            .orderBy('createdAt', 'desc')
+            .get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
     return {
         save, getMyRecords,
         getClassRanking, getGradeRanking,
-        getAllUsers, getUserRecords,
+        getAllUsers, getUserRecords, getBubbleRecords,
         getRankingSettings, setRankingSettings,
         getKeyboardSettings, setKeyboardSettings
     };

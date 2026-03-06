@@ -237,7 +237,7 @@
     <div id="record-modal" class="modal-overlay hidden" onclick="handleRecordModalBgClick(event)">
         <div class="modal" style="max-width:760px;width:94vw;max-height:90vh;overflow-y:auto"
             onclick="event.stopPropagation()">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
                 <div>
                     <h3 class="modal-title" id="record-modal-title">📊 학생 기록</h3>
                     <p id="record-modal-sub" style="font-size:0.85rem;color:var(--text-muted);margin-top:4px"></p>
@@ -245,87 +245,166 @@
                 <button class="btn-icon" onclick="closeRecordModal()" style="font-size:1.1rem">✕</button>
             </div>
 
-            <!-- 요약 통계 카드 4개 -->
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-                <div class="card" style="text-align:center;padding:14px 8px">
-                    <div
-                        style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
-                        최고 타수</div>
-                    <div id="rec-best-wpm" style="font-size:1.8rem;font-weight:900;color:var(--accent-cyan)">—</div>
-                </div>
-                <div class="card" style="text-align:center;padding:14px 8px">
-                    <div
-                        style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
-                        평균 정확도</div>
-                    <div id="rec-avg-acc" style="font-size:1.8rem;font-weight:900;color:var(--accent-green)">—</div>
-                </div>
-                <div class="card" style="text-align:center;padding:14px 8px">
-                    <div
-                        style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
-                        총 연습 횟수</div>
-                    <div id="rec-total-count" style="font-size:1.8rem;font-weight:900;color:var(--accent-purple)">—
-                    </div>
-                </div>
-                <div class="card" style="text-align:center;padding:14px 8px">
-                    <div
-                        style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
-                        누적 타수</div>
-                    <div id="rec-total-keys" style="font-size:1.8rem;font-weight:900;color:var(--accent-yellow)">—</div>
-                </div>
+            <!-- 탭 전환 -->
+            <div class="tabs" style="margin-bottom:16px">
+                <button class="tab-btn active" id="rec-tab-typing" onclick="switchRecordTab('typing')">⌨️ 타자연습</button>
+                <button class="tab-btn" id="rec-tab-bubble" onclick="switchRecordTab('bubble')">🫧 버블슈터</button>
             </div>
 
-            <!-- 필터 + 차트 -->
-            <div class="card" style="margin-bottom:16px">
-                <div
-                    style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-                    <h4 style="font-size:0.95rem;font-weight:900">📈 월별 타수 변화</h4>
-                    <div style="display:flex;gap:8px">
-                        <select id="rec-mode-filter" class="input-field"
-                            style="padding:6px 10px;width:auto;font-size:0.82rem" onchange="updateRecordChart()">
-                            <option value="all">전체 모드</option>
-                            <option value="keyboard">자리연습</option>
-                            <option value="word">단어</option>
-                            <option value="sentence">문장</option>
-                            <option value="paragraph">문단</option>
-                        </select>
-                        <select id="rec-lang-filter" class="input-field"
-                            style="padding:6px 10px;width:auto;font-size:0.82rem" onchange="updateRecordChart()">
-                            <option value="all">한글+영문</option>
-                            <option value="ko">한글</option>
-                            <option value="en">영문</option>
-                        </select>
+            <!-- 타자연습 패널 -->
+            <div id="rec-panel-typing">
+
+                <!-- 요약 통계 카드 4개 -->
+                <div id="rec-stat-grid"
+                    style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            최고 타수</div>
+                        <div id="rec-best-wpm" style="font-size:1.8rem;font-weight:900;color:var(--accent-cyan)">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            평균 정확도</div>
+                        <div id="rec-avg-acc" style="font-size:1.8rem;font-weight:900;color:var(--accent-green)">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            총 연습 횟수</div>
+                        <div id="rec-total-count" style="font-size:1.8rem;font-weight:900;color:var(--accent-purple)">—
+                        </div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            누적 타수</div>
+                        <div id="rec-total-keys" style="font-size:1.8rem;font-weight:900;color:var(--accent-yellow)">—
+                        </div>
                     </div>
                 </div>
-                <div style="position:relative;height:200px">
-                    <canvas id="rec-wpm-chart"></canvas>
-                </div>
-            </div>
 
-            <!-- 최근 기록 테이블 -->
-            <div class="card">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                    <h4 style="font-size:0.95rem;font-weight:900">📋 연습 기록 목록</h4>
-                    <span id="rec-table-count" style="font-size:0.82rem;color:var(--text-muted)"></span>
+                <!-- 필터 + 차트 -->
+                <div id="rec-chart-card" class="card" style="margin-bottom:16px">
+                    <div
+                        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+                        <h4 style="font-size:0.95rem;font-weight:900">📈 월별 타수 변화</h4>
+                        <div style="display:flex;gap:8px">
+                            <select id="rec-mode-filter" class="input-field"
+                                style="padding:6px 10px;width:auto;font-size:0.82rem" onchange="updateRecordChart()">
+                                <option value="all">전체 모드</option>
+                                <option value="keyboard">자리연습</option>
+                                <option value="word">단어</option>
+                                <option value="sentence">문장</option>
+                                <option value="paragraph">문단</option>
+                            </select>
+                            <select id="rec-lang-filter" class="input-field"
+                                style="padding:6px 10px;width:auto;font-size:0.82rem" onchange="updateRecordChart()">
+                                <option value="all">한글+영문</option>
+                                <option value="ko">한글</option>
+                                <option value="en">영문</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="position:relative;height:200px">
+                        <canvas id="rec-wpm-chart"></canvas>
+                    </div>
                 </div>
-                <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
-                    <table class="ranking-table" style="width:100%">
-                        <thead style="position:sticky;top:0;z-index:1">
-                            <tr>
-                                <th>날짜</th>
-                                <th>언어</th>
-                                <th>모드</th>
-                                <th>타수 (CPM)</th>
-                                <th>정확도</th>
-                                <th>시간</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rec-table-body">
-                            <tr>
-                                <td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">로딩 중...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- 최근 기록 테이블 -->
+                <div id="rec-table-card" class="card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                        <h4 style="font-size:0.95rem;font-weight:900">📋 연습 기록 목록</h4>
+                        <span id="rec-table-count" style="font-size:0.82rem;color:var(--text-muted)"></span>
+                    </div>
+                    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+                        <table class="ranking-table" style="width:100%">
+                            <thead style="position:sticky;top:0;z-index:1">
+                                <tr>
+                                    <th>날짜</th>
+                                    <th>언어</th>
+                                    <th>모드</th>
+                                    <th>타수 (CPM)</th>
+                                    <th>정확도</th>
+                                    <th>시간</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rec-table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">로딩
+                                        중...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- /rec-panel-typing -->
+
+            <!-- 🫧 버블슈터 기록 패널 -->
+            <div id="rec-panel-bubble" class="hidden">
+                <!-- 버블 요약 카드 -->
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            최고 점수</div>
+                        <div id="bub-best-score" style="font-size:1.8rem;font-weight:900;color:var(--accent-cyan)">—
+                        </div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            최고 레벨</div>
+                        <div id="bub-best-level" style="font-size:1.8rem;font-weight:900;color:var(--accent-green)">—
+                        </div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            평균 정확도</div>
+                        <div id="bub-avg-acc" style="font-size:1.8rem;font-weight:900;color:var(--accent-purple)">—
+                        </div>
+                    </div>
+                    <div class="card" style="text-align:center;padding:14px 8px">
+                        <div
+                            style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+                            총 플레이</div>
+                        <div id="bub-total-count" style="font-size:1.8rem;font-weight:900;color:var(--accent-yellow)">—
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버블 기록 테이블 -->
+                <div class="card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                        <h4 style="font-size:0.95rem;font-weight:900">🫧 버블슈터 기록</h4>
+                        <span id="bub-table-count" style="font-size:0.82rem;color:var(--text-muted)"></span>
+                    </div>
+                    <div style="overflow-x:auto;max-height:360px;overflow-y:auto">
+                        <table class="ranking-table" style="width:100%">
+                            <thead style="position:sticky;top:0;z-index:1">
+                                <tr>
+                                    <th>날짜</th>
+                                    <th>언어</th>
+                                    <th>점수</th>
+                                    <th>레벨</th>
+                                    <th>평균 타수</th>
+                                    <th>최고 타수</th>
+                                    <th>정확도</th>
+                                    <th>시간</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bub-table-body">
+                                <tr>
+                                    <td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">로딩
+                                        중...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -728,30 +807,44 @@
         const REC_LANG_LABEL = { ko: '🇰🇷 한글', en: '🇺🇸 영문' };
 
         let recAllRecords = [];
+        let recBubbleRecords = [];
         let recChart = null;
+        let recCurrentUid = null;
 
         async function openRecordModal(uid, name, className) {
+            recCurrentUid = uid;
             // 모달 초기화
             document.getElementById('record-modal-title').textContent = `📊 ${name} 학생 기록`;
             document.getElementById('record-modal-sub').textContent = `${className} · ${name}`;
-            document.getElementById('rec-best-wpm').textContent = '—';
-            document.getElementById('rec-avg-acc').textContent = '—';
-            document.getElementById('rec-total-count').textContent = '—';
-            document.getElementById('rec-total-keys').textContent = '—';
+            // 타자연습 탭 로드
+            ['rec-best-wpm', 'rec-avg-acc', 'rec-total-count', 'rec-total-keys'].forEach(id =>
+                document.getElementById(id).textContent = '—');
             document.getElementById('rec-table-body').innerHTML =
                 '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">로딩 중...</td></tr>';
             document.getElementById('rec-mode-filter').value = 'all';
             document.getElementById('rec-lang-filter').value = 'all';
+            // 버블 탭 로드
+            ['bub-best-score', 'bub-best-level', 'bub-avg-acc', 'bub-total-count'].forEach(id =>
+                document.getElementById(id).textContent = '—');
+            document.getElementById('bub-table-body').innerHTML =
+                '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">로딩 중...</td></tr>';
+            // 탭을 타자연습으로 초기화
+            switchRecordTab('typing');
             if (recChart) { recChart.destroy(); recChart = null; }
             document.getElementById('record-modal').classList.remove('hidden');
 
             try {
-                recAllRecords = await Records.getUserRecords(uid);
+                [recAllRecords, recBubbleRecords] = await Promise.all([
+                    Records.getUserRecords(uid),
+                    Records.getBubbleRecords(uid),
+                ]);
                 const stuData = allStudents.find(s => s.id === uid);
                 const totalKeys = stuData ? (stuData.totalKeystrokes || 0) : 0;
                 renderRecordStats(totalKeys);
                 initRecordChart();
                 updateRecordChart();
+                renderBubbleStats();
+                renderBubbleTable();
             } catch (e) {
                 console.error('기록 로드 실패:', e);
                 document.getElementById('rec-table-body').innerHTML =
@@ -762,7 +855,20 @@
         function closeRecordModal() {
             document.getElementById('record-modal').classList.add('hidden');
             if (recChart) { recChart.destroy(); recChart = null; }
-            recAllRecords = [];
+            recAllRecords = []; recBubbleRecords = [];
+        }
+
+        function switchRecordTab(tab) {
+            const isTyping = tab === 'typing';
+            document.getElementById('rec-tab-typing').classList.toggle('active', isTyping);
+            document.getElementById('rec-tab-bubble').classList.toggle('active', !isTyping);
+            // 타자연습 패널은 통계컬드+차트+테이블을 직접 토글
+            ['rec-stat-grid', 'rec-chart-card', 'rec-table-card'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', !isTyping);
+            });
+            const bubPanel = document.getElementById('rec-panel-bubble');
+            if (bubPanel) bubPanel.classList.toggle('hidden', isTyping);
         }
 
         function handleRecordModalBgClick(e) {
@@ -860,7 +966,51 @@
             }).join('');
         }
 
+        // ── 버블슈터 기록 렌더 ──────────────────────────────
+        function renderBubbleStats() {
+            if (!recBubbleRecords.length) {
+                ['bub-best-score', 'bub-best-level', 'bub-avg-acc', 'bub-total-count']
+                    .forEach(id => document.getElementById(id).textContent = '0');
+                return;
+            }
+            const bestScore = Math.max(...recBubbleRecords.map(r => r.score || 0));
+            const bestLevel = Math.max(...recBubbleRecords.map(r => r.level || 1));
+            const avgAcc = recBubbleRecords.reduce((s, r) => s + (r.accuracy || 0), 0) / recBubbleRecords.length;
+            document.getElementById('bub-best-score').textContent = bestScore.toLocaleString();
+            document.getElementById('bub-best-level').textContent = 'Lv.' + bestLevel;
+            document.getElementById('bub-avg-acc').textContent = avgAcc.toFixed(1) + '%';
+            document.getElementById('bub-total-count').textContent = recBubbleRecords.length + '회';
+        }
+
+        function renderBubbleTable() {
+            const tbody = document.getElementById('bub-table-body');
+            document.getElementById('bub-table-count').textContent = `총 ${recBubbleRecords.length}건`;
+            if (!recBubbleRecords.length) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">버블슈터 기록이 없습니다.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = recBubbleRecords.map(r => {
+                const d = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+                const dateStr = d.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
+                    + ' ' + d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                const acc = r.accuracy ?? 100;
+                const accColor = acc >= 80 ? 'var(--accent-green)' : acc >= 60 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+                const langLabel = r.lang === 'ko' ? '🇰🇷 한글' : r.lang === 'en' ? '🇺🇸 영문' : (r.lang || '-');
+                return `<tr>
+                    <td style="color:var(--text-muted);font-size:0.82rem">${dateStr}</td>
+                    <td style="font-size:0.85rem">${langLabel}</td>
+                    <td><strong style="color:var(--accent-cyan)">${(r.score || 0).toLocaleString()}</strong></td>
+                    <td>Lv.${r.level || 1}</td>
+                    <td style="color:var(--accent-cyan)">${r.wpmAvg || 0}</td>
+                    <td style="color:var(--accent-purple);font-weight:700">${r.wpmMax || 0}</td>
+                    <td style="color:${accColor};font-weight:700">${acc}%</td>
+                    <td style="color:var(--text-muted)">${r.duration || 0}초</td>
+                </tr>`;
+            }).join('');
+        }
+
         // ── 유틸 ─────────────────────────────
+
         function showMsg(id) {
             const el = document.getElementById(id);
             el.classList.remove('hidden');

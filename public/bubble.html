@@ -283,12 +283,12 @@
                         updateHUD({ score, level, combo, wpm, allClears });
                         refreshWordList();
                     },
-                    onGameOver: ({ score, level }) => {
+                    onGameOver: ({ score, level, wpm, accuracy, duration, totalShots, totalHits }) => {
                         isGameActive = false;
                         document.getElementById('go-score-text').textContent =
-                            `점수: ${score.toLocaleString()}점  /  레벨 ${level}`;
+                            `점수: ${score.toLocaleString()}점  /  레벨 ${level}  /  정확도 ${accuracy}%`;
                         document.getElementById('overlay-gameover').classList.remove('hidden');
-                        saveBubbleScore(score, level);
+                        saveBubbleScore(score, level, { wpm, accuracy, duration, totalShots, totalHits });
                     }
                 }
             );
@@ -380,9 +380,10 @@
         });
 
         // ── Firestore 랭킹 ────────────────────────────────────
-        async function saveBubbleScore(score, level) {
+        async function saveBubbleScore(score, level, stats = {}) {
             if (!currentUser || !userProfile) return;
             try {
+                // 1) 최고 점수 갱신 (bubbleRanking 컬렉션)
                 const ref = db.collection('bubbleRanking').doc(currentUser.uid);
                 const snap = await ref.get();
                 const prev = snap.exists ? (snap.data().bestScore || 0) : 0;
@@ -396,6 +397,25 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     }, { merge: true });
                 }
+
+                // 2) 게임별 상세 기록 저장 (users/{uid}/bubbleRecords 서브컬렉션)
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('bubbleRecords').add({
+                        uid: currentUser.uid,
+                        className: userProfile.className,
+                        name: userProfile.name,
+                        score,
+                        level,
+                        lang: gameLang,
+                        wpmAvg: stats.wpm?.avg || 0,
+                        wpmMax: stats.wpm?.max || 0,
+                        accuracy: stats.accuracy ?? 100,
+                        duration: stats.duration || 0,
+                        totalShots: stats.totalShots || 0,
+                        totalHits: stats.totalHits || 0,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    });
+
                 await loadBubbleRanking();
             } catch (e) { console.error('버블 점수 저장 오류:', e); }
         }
